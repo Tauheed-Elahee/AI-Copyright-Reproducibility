@@ -21,19 +21,14 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 
 ```
 /
-├── config.json             location manifest (points to all other config files)
-├── config/                 operational configuration
-│   ├── experiment.json     run settings (iterations, timing, seeds, parallelism)
-│   ├── deployments.json    deployment arms (endpoints, parameters)
-│   └── secrets.template.json  copy → secrets.json, fill in API keys
-├── input/                  research content (edit to change what is tested)
-│   ├── text.json           text library (ground truth sections, aliases)
-│   ├── queries.json        query templates
-│   └── prompts.json        text × query bindings
+├── example.project/        template — copy this to start a new study
 ├── src/                    C# source + project file
+├── scripts/
+│   ├── build/              build.sh / build.bat
+│   ├── run/                run.sh   / run.bat
+│   └── view/               status.sh / status.bat
+├── .github/workflows/      release.yml — publishes binaries on version tag
 ├── docs/                   GitHub Pages
-├── output/                 run output (gitignored)
-├── log/                    run logs (gitignored)
 └── *.md                    documentation
 ```
 
@@ -101,6 +96,40 @@ Or build a self-contained binary for your platform:
 dotnet publish src/ -c Release -r linux-x64 --self-contained \
   -p:PublishSingleFile=true -p:AssemblyName=harness -o dist/
 ./dist/harness <project-dir>
+```
+
+## Scripts
+
+All scripts must be run from the **repo root**. Each requires a `<project-dir>` argument and exits with an error if omitted.
+
+### Build
+
+Restores NuGet packages and compiles the project. Does not run.
+
+```bash
+bash scripts/build/build.sh
+scripts\build\build.bat          # Windows
+```
+
+### Run
+
+Restores, builds, and runs the harness against the given project directory.
+
+```bash
+bash scripts/run/run.sh <project-dir>
+scripts\run\run.bat <project-dir>   # Windows
+```
+
+### Status monitor
+
+Reads the latest log file from `<project-dir>/log/` and prints a live summary: last run line, progress bar, sleep status, identity groups, and error count. Set `HARNESS_LOG` to point at a specific log file instead.
+
+```bash
+bash scripts/view/status.sh <project-dir>
+scripts\view\status.bat <project-dir>   # Windows
+
+# Live refresh (Linux/macOS):
+watch -n 2 -c bash scripts/view/status.sh <project-dir>
 ```
 
 ## Query types
