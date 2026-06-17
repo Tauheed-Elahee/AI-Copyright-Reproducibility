@@ -140,10 +140,10 @@ namespace AICopyrightReproducibility
             File.WriteAllText(path, sb.ToString());
         }
 
-        internal static void WriteIdentityGroups(List<RunRecord> records)
+        internal static void WriteIdentityGroups(List<RunRecord> records, Logger logger)
         {
-            Console.WriteLine(new string('-', 80));
-            Console.WriteLine("Distinct semantic hashes (identity groups):");
+            logger.Info(new string('-', 80));
+            logger.Info("Distinct semantic hashes (identity groups):");
             IEnumerable<IGrouping<string?, RunRecord>> groups = records
                 .Where(r => r.SemanticSha256 is not null)
                 .GroupBy(r => r.SemanticSha256)
@@ -152,17 +152,17 @@ namespace AICopyrightReproducibility
             foreach (IGrouping<string?, RunRecord> g in groups)
             {
                 gi++;
-                Console.WriteLine(
+                logger.Info(
                     $"  group {gi}: {g.Count()} run(s)  sem={g.Key![..12]}  " +
                     $"[{string.Join(", ", g.Select(r => $"{r.Deployment}/{r.TextLabel}/{r.QueryLabel}#{r.Set}.{r.Index}"))}]");
             }
         }
 
-        internal static void WriteConsoleSummary(List<RunRecord> records)
+        internal static void WriteConsoleSummary(List<RunRecord> records, Logger logger)
         {
-            Console.WriteLine("\nScoring summary (mean per arm × query):");
-            Console.WriteLine($"  {"text",-20} {"query",-26} {"deployment",-22} {"n",3}  {"ok",3}  {"err",3}  {"rep",3}  {"perf",4}  {"cov",4}  {"halluc",6}  {"li1",3}  {"ord",5}  {"mm",4}  {"title",5}  {"tbhit",5}  {"lpmean",7}  {"lpmed",7}  {"lpmod",7}  {"tlp",7}");
-            Console.WriteLine("  " + new string('-', 182));
+            logger.Info("\nScoring summary (mean per arm × query):");
+            logger.Info($"  {"text",-20} {"query",-26} {"deployment",-22} {"n",3}  {"ok",3}  {"err",3}  {"rep",3}  {"perf",4}  {"cov",4}  {"halluc",6}  {"li1",3}  {"ord",5}  {"mm",4}  {"title",5}  {"tbhit",5}  {"lpmean",7}  {"lpmed",7}  {"lpmod",7}  {"tlp",7}");
+            logger.Info("  " + new string('-', 182));
 
             foreach (IGrouping<(string TextLabel, string QueryLabel, string Deployment), RunRecord> sg in SummaryGroups(records))
             {
@@ -208,7 +208,7 @@ namespace AICopyrightReproducibility
                 else { lpmean = lpmed = lpmod = "-"; }
                 string tlp = tlpVals.Count > 0 ? tlpVals.Average().ToString("F3", CultureInfo.InvariantCulture) : "-";
 
-                Console.WriteLine($"  {sg.Key.TextLabel,-20} {sg.Key.QueryLabel,-26} {sg.Key.Deployment,-22} {rs.Count,3}  {nOk,3}  {nErr,3}  {rep,3}  {perf,4}  {cov,4}  {halluc,6}  {li1,3}  {ord,5}  {mm,4}  {title,5}  {tbhit,5}  {lpmean,7}  {lpmed,7}  {lpmod,7}  {tlp,7}");
+                logger.Info($"  {sg.Key.TextLabel,-20} {sg.Key.QueryLabel,-26} {sg.Key.Deployment,-22} {rs.Count,3}  {nOk,3}  {nErr,3}  {rep,3}  {perf,4}  {cov,4}  {halluc,6}  {li1,3}  {ord,5}  {mm,4}  {title,5}  {tbhit,5}  {lpmean,7}  {lpmed,7}  {lpmod,7}  {tlp,7}");
             }
         }
 
@@ -268,7 +268,7 @@ namespace AICopyrightReproducibility
             File.WriteAllText(path, sb.ToString());
         }
 
-        internal static void WriteConsolePctSummary(List<RunRecord> records)
+        internal static void WriteConsolePctSummary(List<RunRecord> records, Logger logger)
         {
             // Pre-pass: find max mean_mm per (text, query) for relative mm% normalisation
             var maxMmByQuery = new Dictionary<(string, string), float>();
@@ -282,9 +282,9 @@ namespace AICopyrightReproducibility
                     maxMmByQuery[qk] = meanMm;
             }
 
-            Console.WriteLine("\nScoring summary — percentages (mean per arm × query):");
-            Console.WriteLine($"  {"text",-20} {"query",-26} {"deployment",-22} {"n",3}  {"ok%",6}  {"err%",6}  {"rep%",6}  {"perf%",6}  {"cov%",6}  {"halluc%",7}  {"li1%",6}  {"ord%",6}  {"mm%",6}  {"title%",7}  {"tbhit%",7}  {"lp_geo",7}  {"lp_ari",7}  {"lpm_geo",7}  {"lpm_ari",7}  {"tlp_geo",7}  {"tlp_ari",7}");
-            Console.WriteLine("  " + new string('-', 224));
+            logger.Info("\nScoring summary — percentages (mean per arm × query):");
+            logger.Info($"  {"text",-20} {"query",-26} {"deployment",-22} {"n",3}  {"ok%",6}  {"err%",6}  {"rep%",6}  {"perf%",6}  {"cov%",6}  {"halluc%",7}  {"li1%",6}  {"ord%",6}  {"mm%",6}  {"title%",7}  {"tbhit%",7}  {"lp_geo",7}  {"lp_ari",7}  {"lpm_geo",7}  {"lpm_ari",7}  {"tlp_geo",7}  {"tlp_ari",7}");
+            logger.Info("  " + new string('-', 224));
 
             foreach (IGrouping<(string TextLabel, string QueryLabel, string Deployment), RunRecord> sg in SummaryGroups(records))
             {
@@ -343,7 +343,7 @@ namespace AICopyrightReproducibility
 
                 string okPct2  = rs.Count > 0 ? (nOk  * 100.0 / rs.Count).ToString("F1", CultureInfo.InvariantCulture) + "%" : "-";
                 string errPct2 = rs.Count > 0 ? (nErr * 100.0 / rs.Count).ToString("F1", CultureInfo.InvariantCulture) + "%" : "-";
-                Console.WriteLine($"  {sg.Key.TextLabel,-20} {sg.Key.QueryLabel,-26} {sg.Key.Deployment,-22} {rs.Count,3}  {okPct2,6}  {errPct2,6}  {repPct,6}  {perfPct,6}  {covPct,6}  {hallucPct,7}  {li1Pct,6}  {ordPct,6}  {mmPct,6}  {titlePct,7}  {tbhitPct,7}  {lpGeo,7}  {lpAri,7}  {lpmGeo,7}  {lpmAri,7}  {tlpGeo,7}  {tlpAri,7}");
+                logger.Info($"  {sg.Key.TextLabel,-20} {sg.Key.QueryLabel,-26} {sg.Key.Deployment,-22} {rs.Count,3}  {okPct2,6}  {errPct2,6}  {repPct,6}  {perfPct,6}  {covPct,6}  {hallucPct,7}  {li1Pct,6}  {ordPct,6}  {mmPct,6}  {titlePct,7}  {tbhitPct,7}  {lpGeo,7}  {lpAri,7}  {lpmGeo,7}  {lpmAri,7}  {tlpGeo,7}  {tlpAri,7}");
             }
         }
     }

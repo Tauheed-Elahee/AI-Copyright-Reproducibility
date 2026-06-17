@@ -19,8 +19,9 @@ namespace AICopyrightReproducibility.Executors.Standard
         private readonly ChatClient _client;
         // Used by AzureModeApi to inject the Azure deployment name into the request body
         private readonly string? _injectModel;
+        private readonly Logger _logger;
 
-        public StandardOpenAIExecutor(DeploymentConfig deployment)
+        internal StandardOpenAIExecutor(DeploymentConfig deployment, Logger logger)
         {
             string endpoint = deployment.Connection.Endpoint
                 ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.endpoint.");
@@ -31,12 +32,14 @@ namespace AICopyrightReproducibility.Executors.Standard
                 : "";
             _client = new ChatClient(model, new ApiKeyCredential(apiKey),
                 new OpenAIClientOptions { Endpoint = new Uri(endpoint) });
+            _logger = logger;
         }
 
-        internal StandardOpenAIExecutor(ChatClient client, string? injectModel = null)
+        internal StandardOpenAIExecutor(ChatClient client, Logger logger, string? injectModel = null)
         {
             _client      = client;
             _injectModel = injectModel;
+            _logger      = logger;
         }
 
         public async Task<RunRecord> ExecuteAsync(
@@ -83,7 +86,7 @@ namespace AICopyrightReproducibility.Executors.Standard
                             if (string.Equals(h.Key, "Retry-After", StringComparison.OrdinalIgnoreCase))
                                 { retryAfter = h.Value; break; }
                     TimeSpan delay = HarnessUtils.BackoffDelay(attempt, retryAfter, retry);
-                    Console.WriteLine($"[{label}] 429 rate-limited, retry {attempt + 1}/{retry.MaxAttempts} after {delay.TotalSeconds:F1}s");
+                    _logger.Warn($"[{label}] 429 rate-limited, retry {attempt + 1}/{retry.MaxAttempts} after {delay.TotalSeconds:F1}s");
                     await Task.Delay(delay).ConfigureAwait(false);
                     attempt++;
                     rec.RetryCount++;

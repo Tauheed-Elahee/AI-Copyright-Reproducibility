@@ -59,11 +59,28 @@ namespace AICopyrightReproducibility
             Directory.CreateDirectory(logDir);
             StreamWriter logWriter = new StreamWriter(
                 Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
-            Console.SetOut(new TeeWriter(Console.Out, logWriter));
-            Console.WriteLine($"Loaded config : {configPath}");
+
+            string sysLogDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ai-copyright-reproducibility", "logs");
+            Directory.CreateDirectory(sysLogDir);
+            StreamWriter sysLogWriter = new StreamWriter(
+                Path.Combine(sysLogDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+
+            using Logger logger = new Logger(Console.Out, Console.Error, logWriter,
+                                             Logger.Level.Info, sysLogWriter);
+            logger.Info($"Loaded config : {configPath}");
 
             static string AbsPath(string dir, string file) =>
                 Path.IsPathRooted(file) ? file : Path.Combine(dir, file);
+
+            static Logger.Level ParseLevel(string? s) => s?.ToLowerInvariant() switch
+            {
+                "verbose" => Logger.Level.Verbose,
+                "warning" => Logger.Level.Warning,
+                "error"   => Logger.Level.Error,
+                _         => Logger.Level.Info
+            };
 
             string configLocDir = Path.Combine(configDir, cfg.Locations.Config.Dir);
 
@@ -74,7 +91,8 @@ namespace AICopyrightReproducibility
                 cfg.Experiment = JsonSerializer.Deserialize<ExperimentConfig>(
                     File.ReadAllText(p), readOpts)
                     ?? throw new InvalidOperationException("Failed to deserialise experiment config.");
-                Console.WriteLine($"Loaded experiment: {p}");
+                logger.SetLevel(ParseLevel(cfg.Experiment.LogLevel));
+                logger.Info($"Loaded experiment: {p}");
             }
             string inputLocDir  = Path.Combine(configDir, cfg.Locations.Input.Dir);
 
@@ -89,7 +107,7 @@ namespace AICopyrightReproducibility
                     .Select(e => JsonSerializer.Deserialize<QueryConfig>(e.GetRawText(), readOpts)!)
                     .ToList();
                 queriesDict = cfg.Queries.ToDictionary(q => q.Label);
-                Console.WriteLine($"Loaded queries: {p}");
+                logger.Info($"Loaded queries: {p}");
             }
 
             // Load deployments
@@ -101,7 +119,7 @@ namespace AICopyrightReproducibility
                     .EnumerateArray()
                     .Select(e => JsonSerializer.Deserialize<DeploymentConfig>(e.GetRawText(), readOpts)!)
                     .ToList();
-                Console.WriteLine($"Loaded deployments: {p}");
+                logger.Info($"Loaded deployments: {p}");
             }
 
             // Load text library
@@ -127,7 +145,7 @@ namespace AICopyrightReproducibility
                         new Dictionary<string, string>(entry.Content.Aliases, StringComparer.OrdinalIgnoreCase),
                         extras);
                 }
-                Console.WriteLine($"Loaded texts  : {p}");
+                logger.Info($"Loaded texts  : {p}");
             }
 
             // Load prompts and bind
@@ -141,7 +159,7 @@ namespace AICopyrightReproducibility
                     .Select(e => JsonSerializer.Deserialize<PromptEntry>(e.GetRawText(), readOpts)!)
                     .ToList();
                 boundPrompts = HarnessUtils.BindPrompts(queriesDict, textsDict, prompts);
-                Console.WriteLine($"Loaded prompts: {p}");
+                logger.Info($"Loaded prompts: {p}");
             }
 
             string outDir = Path.Combine(configDir, cfg.Locations.Output.Dir, stamp);
@@ -154,7 +172,7 @@ namespace AICopyrightReproducibility
                       File.ReadAllText(secretsPath), readOpts) ?? new()
                 : new();
             HarnessUtils.ResolveSecrets(cfg, secrets);
-            Console.WriteLine($"Loaded secrets: {secretsPath}");
+            logger.Info($"Loaded secrets: {secretsPath}");
 
             string fallbackScope = cfg.Deployments
                 .Select(a => a.Connection.TokenScope)
@@ -168,18 +186,18 @@ namespace AICopyrightReproducibility
                 d => d.Label,
                 d => d.Mode switch
                 {
-                    DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential, fallbackScope),
-                    DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http, credential, d, fallbackScope),
-                    DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(d),
+                    DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential, fallbackScope, logger),
+                    DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http, credential, d, fallbackScope, logger),
+                    DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(d, logger),
                     _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
                 });
 
-            Console.WriteLine($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
-            Console.WriteLine($"Bound prompts: {boundPrompts.Count} ({string.Join(", ", boundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");
-            Console.WriteLine($"Sets    : {cfg.Experiment.Iterations.Set}  Reps/set: {cfg.Experiment.Iterations.Rep}");
-            Console.WriteLine(new string('-', 80));
+            logger.Info($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
+            logger.Info($"Bound prompts: {boundPrompts.Count} ({string.Join(", ", boundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");
+            logger.Info($"Sets    : {cfg.Experiment.Iterations.Set}  Reps/set: {cfg.Experiment.Iterations.Rep}");
+            logger.Info(new string('-', 80));
 
-            using HarnessRunner runner = new HarnessRunner(cfg, boundPrompts, executors, outDir);
+            using HarnessRunner runner = new HarnessRunner(cfg, boundPrompts, executors, outDir, logger);
             List<RunRecord> records = await runner.RunAllAsync();
 
             JsonSerializerOptions jsonOpts = new JsonSerializerOptions { WriteIndented = true };
@@ -187,16 +205,16 @@ namespace AICopyrightReproducibility
                 JsonSerializer.Serialize(records, jsonOpts));
             OutputWriter.WriteManifestCsv(records, Path.Combine(outDir, "manifest.csv"));
 
-            OutputWriter.WriteIdentityGroups(records);
+            OutputWriter.WriteIdentityGroups(records, logger);
             if (records.Any(r => r.SectionCount > 0))
             {
                 OutputWriter.WriteSummaryCountsCsv(records, Path.Combine(outDir, "summary_counts.csv"));
                 OutputWriter.WriteSummaryPctCsv(records, Path.Combine(outDir, "summary_pct.csv"));
-                OutputWriter.WriteConsoleSummary(records);
-                OutputWriter.WriteConsolePctSummary(records);
+                OutputWriter.WriteConsoleSummary(records, logger);
+                OutputWriter.WriteConsolePctSummary(records, logger);
             }
 
-            Console.WriteLine($"\nOutput written to: {Path.GetFullPath(outDir)}");
+            logger.Info($"\nOutput written to: {Path.GetFullPath(outDir)}");
             return 0;
         }
 

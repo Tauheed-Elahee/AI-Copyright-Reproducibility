@@ -23,8 +23,9 @@ namespace AICopyrightReproducibility.Executors.Azure
         private readonly string _agentEndpoint;
         private readonly string _agentApiVersion;
         private readonly string _scope;
+        private readonly Logger _logger;
 
-        public AzureAgentApiExecutor(HttpClient http, DefaultAzureCredential credential, DeploymentConfig deployment, string fallbackScope)
+        internal AzureAgentApiExecutor(HttpClient http, DefaultAzureCredential credential, DeploymentConfig deployment, string fallbackScope, Logger logger)
         {
             _http = http;
             _credential = credential;
@@ -34,7 +35,8 @@ namespace AICopyrightReproducibility.Executors.Azure
                 ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.agent.endpoint.");
             _agentApiVersion = agent.ApiVersion
                 ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.agent.api_version.");
-            _scope = deployment.Connection.TokenScope ?? fallbackScope;
+            _scope  = deployment.Connection.TokenScope ?? fallbackScope;
+            _logger = logger;
         }
 
         public async Task<RunRecord> ExecuteAsync(
@@ -82,7 +84,7 @@ namespace AICopyrightReproducibility.Executors.Azure
                         string? retryAfter = response.Headers.RetryAfter?.Delta is TimeSpan d
                             ? d.TotalSeconds.ToString("F0") : null;
                         TimeSpan delay = HarnessUtils.BackoffDelay(attempt, retryAfter, retry);
-                        Console.WriteLine($"[{label}] 429 rate-limited, retry {attempt + 1}/{retry.MaxAttempts} after {delay.TotalSeconds:F1}s");
+                        _logger.Warn($"[{label}] 429 rate-limited, retry {attempt + 1}/{retry.MaxAttempts} after {delay.TotalSeconds:F1}s");
                         await Task.Delay(delay).ConfigureAwait(false);
                         attempt++;
                         rec.RetryCount++;

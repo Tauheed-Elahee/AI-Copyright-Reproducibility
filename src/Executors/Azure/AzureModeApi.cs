@@ -17,7 +17,7 @@ namespace AICopyrightReproducibility.Executors.Azure
     {
         private readonly StandardOpenAIExecutor _inner;
 
-        public AzureModeApi(DeploymentConfig deployment, DefaultAzureCredential credential, string fallbackScope)
+        internal AzureModeApi(DeploymentConfig deployment, DefaultAzureCredential credential, string fallbackScope, Logger logger)
         {
             string modelDeployment = deployment.Connection.Deployment
                 ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.deployment.");
@@ -30,7 +30,7 @@ namespace AICopyrightReproducibility.Executors.Azure
             if (deployment.Connection.ApiVersionOverride is not null)
                 opts.AddPolicy(new ApiVersionPolicy(deployment.Connection.ApiVersionOverride), PipelinePosition.PerCall);
             ChatClient client = new ChatClient(modelDeployment, authenticationPolicy: tp, options: opts);
-            _inner = new StandardOpenAIExecutor(client, modelDeployment);
+            _inner = new StandardOpenAIExecutor(client, logger, modelDeployment);
         }
 
         public Task<RunRecord> ExecuteAsync(

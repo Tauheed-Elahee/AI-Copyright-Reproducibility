@@ -22,12 +22,14 @@ namespace AICopyrightReproducibility
         private readonly TimingPauseRunConfig _pause;
         private readonly ParallelConfig _par;
         private readonly SemaphoreSlim? _sem;
+        private readonly Logger _logger;
 
         internal HarnessRunner(
             RunConfig cfg,
             List<BoundPrompt> boundPrompts,
             Dictionary<string, IDeploymentExecutor> executors,
-            string outDir)
+            string outDir,
+            Logger logger)
         {
             _boundPrompts    = boundPrompts;
             _executors       = executors;
@@ -39,6 +41,7 @@ namespace AICopyrightReproducibility
             _seed            = cfg.Experiment.Seed;
             _pause           = cfg.Experiment.Timing.Pause.Run;
             _par             = cfg.Experiment.Parallel;
+            _logger          = logger;
             bool anyParallel = _par.Level.Deployment || _par.Level.Rep || _par.Level.Prompt;
             int  cap         = _par.MaxConcurrency > 0 ? _par.MaxConcurrency : int.MaxValue;
             _sem = anyParallel ? new SemaphoreSlim(cap, cap) : null;
@@ -77,7 +80,7 @@ namespace AICopyrightReproducibility
                 if (s < _iterations.Set && _pause.Set > 0)
                 {
                     DateTime resume = DateTime.UtcNow.AddSeconds(_pause.Set);
-                    Console.WriteLine($"Set {s}/{_iterations.Set} complete. " +
+                    _logger.Info($"Set {s}/{_iterations.Set} complete. " +
                         $"Resuming at {resume:HH:mm:ss} UTC.");
                     await Task.Delay(TimeSpan.FromSeconds(_pause.Set));
                 }
@@ -162,7 +165,7 @@ namespace AICopyrightReproducibility
                 if (bound.Sections.Length > 0)
                     ScoringUtils.ScoreRecord(rec, bound);
                 ScoringUtils.ExtractLogprobs(rec.RawJson!, rec, bound.TitleShort);
-                Console.WriteLine(
+                _logger.Info(
                     $"[{rec.Deployment,-20}] set={s}/{_iterations.Set} " +
                     $"rep={r,2}/{_iterations.Rep} " +
                     $"text={bound.TextLabel,-20} query={bound.QueryLabel,-24} status={rec.Status} {rec.DurationMs,6}ms " +
