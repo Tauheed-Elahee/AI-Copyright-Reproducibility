@@ -63,6 +63,7 @@ namespace AICopyrightReproducibility
 
     public sealed class FileConfig
     {
+        public string? Experiment  { get; set; }
         public string? Queries     { get; set; }
         public string? Texts       { get; set; }
         public string? Prompts     { get; set; }
@@ -85,13 +86,12 @@ namespace AICopyrightReproducibility
 
     public sealed class ExperimentConfig
     {
-        public IterationsConfig    Iterations     { get; set; } = new();
-        public bool                OmitNullFields { get; set; } = true;
-        public LocationsConfig     Locations      { get; set; } = new();
-        public ParallelConfig      Parallel       { get; set; } = new();
-        public RetryConfig         Retry          { get; set; } = new();
-        public TimingConfig        Timing         { get; set; } = new();
-        public SeedConfig          Seed           { get; set; } = new();
-        public string?             CapturedUtc    { get; set; }
+        public IterationsConfig Iterations     { get; set; } = new();
+        public bool             OmitNullFields { get; set; } = true;
+        public ParallelConfig   Parallel       { get; set; } = new();
+        public RetryConfig      Retry          { get; set; } = new();
+        public TimingConfig     Timing         { get; set; } = new();
+        public SeedConfig       Seed           { get; set; } = new();
+        public string?          CapturedUtc    { get; set; }
     }
 }

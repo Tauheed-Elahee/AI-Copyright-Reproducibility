@@ -1,54 +1,21 @@
 {
-  "experiment": {
-    "iterations": {
-      "set": 20,
-      "rep": 10
-    },
-    "omit_null_fields": true,
-    "locations": {
-      "config": {
-        "dir": "config",
-        "files": {
-          "deployments": "deployments.json"
-        }
-      },
-      "input": {
-        "dir": "input",
-        "files": {
-          "texts":       "text.json",
-          "queries":     "queries.json",
-          "prompts":     "prompts.json"
-        }
-      },
-      "output": { "dir": "output" },
-      "log":    { "dir": "log"    }
-    },
-    "timing": {
-      "pause": {
-        "run": {
-          "set":    60,
-          "prompt":   0,
-          "rep":      5,
-          "deployment": 0
-        }
+  "locations": {
+    "config": {
+      "dir": "config",
+      "files": {
+        "experiment":  "experiment.json",
+        "deployments": "deployments.json"
       }
     },
-    "seed": {
-      "shuffle": {
-        "run": {
-          "prompt": 99,
-          "deployment": 20
-        },
-        "content": 42
+    "input": {
+      "dir": "input",
+      "files": {
+        "texts":   "text.json",
+        "queries": "queries.json",
+        "prompts": "prompts.json"
       }
     },
-    "parallel": {
-      "max_concurrency": 6,
-      "level": {
-        "deployment": true,
-        "rep":        true,
-        "prompt":     true
-      }
-    }
+    "output": { "dir": "output" },
+    "log":    { "dir": "log"    }
   }
 }

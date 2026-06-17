@@ -21,8 +21,9 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 
 ```
 /
-├── config.json             experiment settings (iterations, timing, seeds, locations)
+├── config.json             location manifest (points to all other config files)
 ├── config/                 operational configuration
+│   ├── experiment.json     run settings (iterations, timing, seeds, parallelism)
 │   ├── deployments.json    deployment arms (endpoints, parameters)
 │   └── secrets.template.json  copy → secrets.json, fill in API keys
 ├── input/                  research content (edit to change what is tested)
@@ -47,9 +48,10 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 
 ## Configure
 
-Edit `config.json` to set iteration counts, timing, seeds, and directory locations.  
+Edit `config/experiment.json` to set iteration counts, timing, seeds, and parallelism.  
 Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
-Edit files in `input/` to change the corpus, query templates, or prompt bindings.
+Edit files in `input/` to change the corpus, query templates, or prompt bindings.  
+Edit `config.json` only to change directory locations.
 
 ## Run
 

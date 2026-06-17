@@ -1,0 +1,36 @@
+{
+  "experiment": {
+    "iterations": {
+      "set": 20,
+      "rep": 10
+    },
+    "omit_null_fields": true,
+    "timing": {
+      "pause": {
+        "run": {
+          "set":    60,
+          "prompt":   0,
+          "rep":      5,
+          "deployment": 0
+        }
+      }
+    },
+    "seed": {
+      "shuffle": {
+        "run": {
+          "prompt": 99,
+          "deployment": 20
+        },
+        "content": 42
+      }
+    },
+    "parallel": {
+      "max_concurrency": 6,
+      "level": {
+        "deployment": true,
+        "rep":        true,
+        "prompt":     true
+      }
+    }
+  }
+}

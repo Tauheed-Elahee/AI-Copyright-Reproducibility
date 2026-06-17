@@ -36,8 +36,9 @@ namespace AICopyrightReproducibility
 
     public sealed class RunConfig
     {
-        public List<QueryConfig>      Queries     { get; set; } = new();
+        public LocationsConfig        Locations   { get; set; } = new();
         public ExperimentConfig       Experiment  { get; set; } = new();
+        public List<QueryConfig>      Queries     { get; set; } = new();
         public List<DeploymentConfig> Deployments { get; set; } = new();
     }
 

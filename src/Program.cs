@@ -34,7 +34,7 @@ namespace AICopyrightReproducibility
                 File.ReadAllText(configPath), readOpts)
                 ?? throw new InvalidOperationException("Failed to deserialise config.");
 
-            string logDir = Path.Combine(configDir, cfg.Experiment.Locations.Log.Dir);
+            string logDir = Path.Combine(configDir, cfg.Locations.Log.Dir);
             Directory.CreateDirectory(logDir);
             StreamWriter logWriter = new StreamWriter(
                 Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
@@ -44,12 +44,22 @@ namespace AICopyrightReproducibility
             static string AbsPath(string dir, string file) =>
                 Path.IsPathRooted(file) ? file : Path.Combine(dir, file);
 
-            string configLocDir = Path.Combine(configDir, cfg.Experiment.Locations.Config.Dir);
-            string inputLocDir  = Path.Combine(configDir, cfg.Experiment.Locations.Input.Dir);
+            string configLocDir = Path.Combine(configDir, cfg.Locations.Config.Dir);
+
+            // Load experiment settings
+            if (cfg.Locations.Config.Files?.Experiment is { } experimentFile)
+            {
+                string p = AbsPath(configLocDir, experimentFile);
+                cfg.Experiment = JsonSerializer.Deserialize<ExperimentConfig>(
+                    File.ReadAllText(p), readOpts)
+                    ?? throw new InvalidOperationException("Failed to deserialise experiment config.");
+                Console.WriteLine($"Loaded experiment: {p}");
+            }
+            string inputLocDir  = Path.Combine(configDir, cfg.Locations.Input.Dir);
 
             // Load query library
             Dictionary<string, QueryConfig> queriesDict = new();
-            if (cfg.Experiment.Locations.Input.Files?.Queries is { } queriesFile)
+            if (cfg.Locations.Input.Files?.Queries is { } queriesFile)
             {
                 string p = AbsPath(inputLocDir, queriesFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -62,7 +72,7 @@ namespace AICopyrightReproducibility
             }
 
             // Load deployments
-            if (cfg.Experiment.Locations.Config.Files?.Deployments is { } deploymentsFile)
+            if (cfg.Locations.Config.Files?.Deployments is { } deploymentsFile)
             {
                 string p = AbsPath(configLocDir, deploymentsFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -75,7 +85,7 @@ namespace AICopyrightReproducibility
 
             // Load text library
             var textsDict = new Dictionary<string, TextEntry>(StringComparer.Ordinal);
-            if (cfg.Experiment.Locations.Input.Files?.Texts is { } textsFile)
+            if (cfg.Locations.Input.Files?.Texts is { } textsFile)
             {
                 string p = AbsPath(inputLocDir, textsFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -101,7 +111,7 @@ namespace AICopyrightReproducibility
 
             // Load prompts and bind
             List<BoundPrompt> boundPrompts = new();
-            if (cfg.Experiment.Locations.Input.Files?.Prompts is { } promptsFile)
+            if (cfg.Locations.Input.Files?.Prompts is { } promptsFile)
             {
                 string p = AbsPath(inputLocDir, promptsFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -113,7 +123,7 @@ namespace AICopyrightReproducibility
                 Console.WriteLine($"Loaded prompts: {p}");
             }
 
-            string outDir = Path.Combine(configDir, cfg.Experiment.Locations.Output.Dir, stamp);
+            string outDir = Path.Combine(configDir, cfg.Locations.Output.Dir, stamp);
             Directory.CreateDirectory(outDir);
             OutputWriter.WriteRunConfig(cfg, outDir);
 
