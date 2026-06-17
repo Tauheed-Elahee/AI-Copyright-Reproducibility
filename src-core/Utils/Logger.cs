@@ -3,9 +3,9 @@ using System.IO;
 
 namespace AICopyrightReproducibility.Utils
 {
-    internal sealed class Logger : IDisposable
+    public sealed class Logger : IDisposable
     {
-        internal enum Level { Verbose = 0, Info = 1, Warning = 2, Error = 3 }
+        public enum Level { Verbose = 0, Info = 1, Warning = 2, Error = 3 }
 
         private readonly TextWriter _out;
         private readonly TextWriter _err;
@@ -14,8 +14,8 @@ namespace AICopyrightReproducibility.Utils
         private Level _minConsole;
         private readonly object _lock = new();
 
-        internal Logger(TextWriter @out, TextWriter err, TextWriter file,
-                        Level minConsole, TextWriter? sysFile = null)
+        public Logger(TextWriter @out, TextWriter err, TextWriter file,
+                      Level minConsole, TextWriter? sysFile = null)
         {
             _out        = @out;
             _err        = err;
@@ -24,12 +24,12 @@ namespace AICopyrightReproducibility.Utils
             _minConsole = minConsole;
         }
 
-        internal void SetLevel(Level level) => _minConsole = level;
+        public void SetLevel(Level level) => _minConsole = level;
 
-        internal void Verbose(string msg) => Write(Level.Verbose, msg);
-        internal void Info(string msg)    => Write(Level.Info,    msg);
-        internal void Warn(string msg)    => Write(Level.Warning, msg);
-        internal void Error(string msg)   => Write(Level.Error,   msg);
+        public void Verbose(string msg) => Write(Level.Verbose, msg);
+        public void Info(string msg)    => Write(Level.Info,    msg);
+        public void Warn(string msg)    => Write(Level.Warning, msg);
+        public void Error(string msg)   => Write(Level.Error,   msg);
 
         private void Write(Level level, string msg)
         {

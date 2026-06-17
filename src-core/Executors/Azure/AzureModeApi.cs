@@ -17,7 +17,7 @@ namespace AICopyrightReproducibility.Executors.Azure
     {
         private readonly StandardOpenAIExecutor _inner;
 
-        internal AzureModeApi(DeploymentConfig deployment, DefaultAzureCredential credential, string fallbackScope, Logger logger)
+        public AzureModeApi(DeploymentConfig deployment, DefaultAzureCredential credential, string fallbackScope, Logger logger)
         {
             string modelDeployment = deployment.Connection.Deployment
                 ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.deployment.");

@@ -11,7 +11,7 @@ using AICopyrightReproducibility.Config;
 
 namespace AICopyrightReproducibility.Utils
 {
-    internal static class HarnessUtils
+    public static class HarnessUtils
     {
         public static string Sha256Hex(string s)
         {
@@ -29,7 +29,7 @@ namespace AICopyrightReproducibility.Utils
             return dict;
         }
 
-        internal static RunRecord CreateRecord(string label, int index) => new RunRecord
+        public static RunRecord CreateRecord(string label, int index) => new RunRecord
         {
             Deployment   = label,
             Index        = index,
@@ -107,7 +107,7 @@ namespace AICopyrightReproducibility.Utils
                 .Select(l => l[2..].Trim())
                 .ToArray();
 
-        internal static TimeSpan BackoffDelay(int attempt, string? retryAfterHeader, RetryConfig retry)
+        public static TimeSpan BackoffDelay(int attempt, string? retryAfterHeader, RetryConfig retry)
         {
             if (retryAfterHeader is not null && double.TryParse(retryAfterHeader, out double secs))
                 return TimeSpan.FromSeconds(Math.Min(secs, retry.MaxDelayS));
@@ -115,7 +115,7 @@ namespace AICopyrightReproducibility.Utils
                 Math.Min(retry.InitialDelayS * Math.Pow(2, attempt), retry.MaxDelayS));
         }
 
-        internal static string ResolvePrompt(string template, string title,
+        public static string ResolvePrompt(string template, string title,
             string[] sections, int globalRep, int contentSeed,
             Dictionary<string, string>? extras = null)
         {
@@ -137,7 +137,7 @@ namespace AICopyrightReproducibility.Utils
             return result;
         }
 
-        internal static void ResolveSecrets(RunConfig cfg, Dictionary<string, string> secrets)
+        public static void ResolveSecrets(RunConfig cfg, Dictionary<string, string> secrets)
         {
             foreach (DeploymentConfig deployment in cfg.Deployments)
             {
@@ -189,7 +189,7 @@ namespace AICopyrightReproducibility.Utils
             });
         }
 
-        internal static List<BoundPrompt> BindPrompts(
+        public static List<BoundPrompt> BindPrompts(
             Dictionary<string, QueryConfig> queries,
             Dictionary<string, TextEntry>   texts,
             IEnumerable<PromptEntry>        prompts)

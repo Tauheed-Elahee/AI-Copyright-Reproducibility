@@ -11,7 +11,7 @@ using AICopyrightReproducibility.Utils;
 
 namespace AICopyrightReproducibility
 {
-    internal static class OutputWriter
+    public static class OutputWriter
     {
         private static string Csv(string? s)
         {
@@ -32,7 +32,7 @@ namespace AICopyrightReproducibility
              rs.Where(r => r.ListLogprobMedian.HasValue).Select(r => r.ListLogprobMedian!.Value).ToList(),
              rs.Where(r => r.TitleLogprob.HasValue)     .Select(r => r.TitleLogprob!.Value).ToList());
 
-        internal static void WriteRunConfig(RunConfig cfg, string outDir)
+        public static void WriteRunConfig(RunConfig cfg, string outDir)
         {
             cfg.Experiment.CapturedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             JsonSerializerOptions writeOpts = new JsonSerializerOptions
@@ -45,7 +45,7 @@ namespace AICopyrightReproducibility
                 JsonSerializer.Serialize(cfg, writeOpts));
         }
 
-        internal static void WriteManifestCsv(List<RunRecord> records, string path)
+        public static void WriteManifestCsv(List<RunRecord> records, string path)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("deployment,set,text_label,query_label,list_task,order_task,index,timestamp_utc,status,duration_ms,retry_count,model," +
@@ -93,7 +93,7 @@ namespace AICopyrightReproducibility
             File.WriteAllText(path, sb.ToString());
         }
 
-        internal static void WriteSummaryCountsCsv(List<RunRecord> records, string path)
+        public static void WriteSummaryCountsCsv(List<RunRecord> records, string path)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("text_label,query_label,deployment,n,n_ok,n_err," +
@@ -140,7 +140,7 @@ namespace AICopyrightReproducibility
             File.WriteAllText(path, sb.ToString());
         }
 
-        internal static void WriteIdentityGroups(List<RunRecord> records, Logger logger)
+        public static void WriteIdentityGroups(List<RunRecord> records, Logger logger)
         {
             logger.Info(new string('-', 80));
             logger.Info("Distinct semantic hashes (identity groups):");
@@ -158,7 +158,7 @@ namespace AICopyrightReproducibility
             }
         }
 
-        internal static void WriteConsoleSummary(List<RunRecord> records, Logger logger)
+        public static void WriteConsoleSummary(List<RunRecord> records, Logger logger)
         {
             logger.Info("\nScoring summary (mean per arm × query):");
             logger.Info($"  {"text",-20} {"query",-26} {"deployment",-22} {"n",3}  {"ok",3}  {"err",3}  {"rep",3}  {"perf",4}  {"cov",4}  {"halluc",6}  {"li1",3}  {"ord",5}  {"mm",4}  {"title",5}  {"tbhit",5}  {"lpmean",7}  {"lpmed",7}  {"lpmod",7}  {"tlp",7}");
@@ -212,7 +212,7 @@ namespace AICopyrightReproducibility
             }
         }
 
-        internal static void WriteSummaryPctCsv(List<RunRecord> records, string path)
+        public static void WriteSummaryPctCsv(List<RunRecord> records, string path)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("text_label,query_label,deployment,n,n_ok%,n_err%," +
@@ -268,7 +268,7 @@ namespace AICopyrightReproducibility
             File.WriteAllText(path, sb.ToString());
         }
 
-        internal static void WriteConsolePctSummary(List<RunRecord> records, Logger logger)
+        public static void WriteConsolePctSummary(List<RunRecord> records, Logger logger)
         {
             // Pre-pass: find max mean_mm per (text, query) for relative mm% normalisation
             var maxMmByQuery = new Dictionary<(string, string), float>();

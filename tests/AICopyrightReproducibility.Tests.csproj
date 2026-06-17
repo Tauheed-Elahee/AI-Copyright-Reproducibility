@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../src/AICopyrightReproducibility.csproj" />
+    <ProjectReference Include="../src-core/AICopyrightReproducibility.Core.csproj" />
   </ItemGroup>
 
 </Project>

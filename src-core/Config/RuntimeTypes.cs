@@ -19,7 +19,7 @@ namespace AICopyrightReproducibility.Config
         public string[] Queries { get; set; } = System.Array.Empty<string>();
     }
 
-    internal sealed class BoundPrompt
+    public sealed class BoundPrompt
     {
         public string   QueryLabel         { get; init; } = "";
         public bool     ListTask           { get; init; }

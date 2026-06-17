@@ -9,7 +9,9 @@ using AICopyrightReproducibility.Utils;
 
 namespace AICopyrightReproducibility
 {
-    internal sealed class HarnessRunner : IDisposable
+    public record RunProgressEvent(int Completed, int Total, RunRecord LastRecord);
+
+    public sealed class HarnessRunner : IDisposable
     {
         private readonly List<BoundPrompt> _boundPrompts;
         private readonly Dictionary<string, IDeploymentExecutor> _executors;
@@ -23,13 +25,17 @@ namespace AICopyrightReproducibility
         private readonly ParallelConfig _par;
         private readonly SemaphoreSlim? _sem;
         private readonly Logger _logger;
+        private readonly IProgress<RunProgressEvent>? _progress;
+        private readonly int _total;
+        private int _completed;
 
-        internal HarnessRunner(
+        public HarnessRunner(
             RunConfig cfg,
             List<BoundPrompt> boundPrompts,
             Dictionary<string, IDeploymentExecutor> executors,
             string outDir,
-            Logger logger)
+            Logger logger,
+            IProgress<RunProgressEvent>? progress = null)
         {
             _boundPrompts    = boundPrompts;
             _executors       = executors;
@@ -42,12 +48,14 @@ namespace AICopyrightReproducibility
             _pause           = cfg.Experiment.Timing.Pause.Run;
             _par             = cfg.Experiment.Parallel;
             _logger          = logger;
+            _progress        = progress;
+            _total           = _iterations.Set * boundPrompts.Count * _iterations.Rep * cfg.Deployments.Count;
             bool anyParallel = _par.Level.Deployment || _par.Level.Rep || _par.Level.Prompt;
             int  cap         = _par.MaxConcurrency > 0 ? _par.MaxConcurrency : int.MaxValue;
             _sem = anyParallel ? new SemaphoreSlim(cap, cap) : null;
         }
 
-        internal async Task<List<RunRecord>> RunAllAsync()
+        public async Task<List<RunRecord>> RunAllAsync()
         {
             List<RunRecord> records = new();
             for (int s = 1; s <= _iterations.Set; s++)
@@ -172,6 +180,8 @@ namespace AICopyrightReproducibility
                     $"out={rec.CompletionTokens?.ToString() ?? "-"} " +
                     $"sem={rec.SemanticSha256Short ?? "(none)"}" +
                     (rec.Error is null ? "" : $"  ERROR: {rec.Error}"));
+                _progress?.Report(new RunProgressEvent(
+                    Interlocked.Increment(ref _completed), _total, rec));
                 return rec;
             }
             finally

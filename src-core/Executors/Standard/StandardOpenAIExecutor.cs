@@ -21,7 +21,7 @@ namespace AICopyrightReproducibility.Executors.Standard
         private readonly string? _injectModel;
         private readonly Logger _logger;
 
-        internal StandardOpenAIExecutor(DeploymentConfig deployment, Logger logger)
+        public StandardOpenAIExecutor(DeploymentConfig deployment, Logger logger)
         {
             string endpoint = deployment.Connection.Endpoint
                 ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.endpoint.");
@@ -35,7 +35,7 @@ namespace AICopyrightReproducibility.Executors.Standard
             _logger = logger;
         }
 
-        internal StandardOpenAIExecutor(ChatClient client, Logger logger, string? injectModel = null)
+        public StandardOpenAIExecutor(ChatClient client, Logger logger, string? injectModel = null)
         {
             _client      = client;
             _injectModel = injectModel;

@@ -6,22 +6,11 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>AICopyrightReproducibility</RootNamespace>
-    <!-- The OpenAI SDK marks the custom-endpoint / bearer-policy constructors
-         as experimental; this suppresses the OPENAI001 diagnostic, matching the
-         #pragma in the original snippet. -->
     <NoWarn>$(NoWarn);OPENAI001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Versions current as of mid-2026; bump if restore reports newer. -->
-    <PackageReference Include="Azure.Identity" Version="1.21.0" />
-    <PackageReference Include="OpenAI" Version="2.11.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-      <_Parameter1>AICopyrightReproducibility.Tests</_Parameter1>
-    </AssemblyAttribute>
+    <ProjectReference Include="../src-core/AICopyrightReproducibility.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -25,7 +25,7 @@ namespace AICopyrightReproducibility.Executors.Azure
         private readonly string _scope;
         private readonly Logger _logger;
 
-        internal AzureAgentApiExecutor(HttpClient http, DefaultAzureCredential credential, DeploymentConfig deployment, string fallbackScope, Logger logger)
+        public AzureAgentApiExecutor(HttpClient http, DefaultAzureCredential credential, DeploymentConfig deployment, string fallbackScope, Logger logger)
         {
             _http = http;
             _credential = credential;

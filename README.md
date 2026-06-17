@@ -22,7 +22,8 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 ```
 /
 ├── example.project/        template — copy this to start a new study
-├── src/                    C# source + project file
+├── src/                    CLI entry point (Program.cs)
+├── src-core/               shared library — logic, config, executors, utils
 │   ├── Config/             config + runtime types
 │   ├── Executors/
 │   │   ├── Azure/          AzureModeApi, AzureAgentApiExecutor

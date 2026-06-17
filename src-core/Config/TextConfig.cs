@@ -25,7 +25,7 @@ namespace AICopyrightReproducibility.Config
         public TextContentConfig Content { get; set; } = new();
     }
 
-    internal sealed record TextEntry(
+    public sealed record TextEntry(
         string TitleFull,
         string TitleShort,
         string[] Sections,
