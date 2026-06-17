@@ -19,6 +19,32 @@ jobs:
       - name: Run tests
         run: dotnet test tests/
 
+  deploy-pages:
+    name: Deploy Pages
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
+      - uses: actions/upload-pages-artifact@v3
+
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4
+
   build:
     name: Build ${{ matrix.rid }}
     needs: test
