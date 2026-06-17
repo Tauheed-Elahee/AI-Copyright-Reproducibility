@@ -27,7 +27,7 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 │   ├── Executors/
 │   │   ├── Azure/          AzureModeApi, AzureAgentApiExecutor
 │   │   └── Standard/       StandardOpenAIExecutor
-│   └── Utils/              HarnessUtils, ScoringUtils, HttpPolicies, TeeWriter
+│   └── Utils/              HarnessUtils, ScoringUtils, HttpPolicies, Logger
 ├── tests/                  xUnit test project
 ├── scripts/
 │   ├── build/              build.sh / build.bat
@@ -67,7 +67,7 @@ Copy `example.project/` to start a new study, then edit the files inside it.
 
 ## Configure
 
-Edit `config/experiment.json` to set iteration counts, timing, seeds, and parallelism.  
+Edit `config/experiment.json` to set iteration counts, timing, seeds, and parallelism. Set `"log_level"` to one of `verbose`, `info` (default), `warning`, or `error` to control console verbosity.  
 Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
 Edit files in `input/` to change the corpus, query templates, or prompt bindings.  
 Edit `config.json` only to change directory locations.  
@@ -147,6 +147,24 @@ scripts\view\status.bat <project-dir>   # Windows
 # Live refresh (Linux/macOS):
 watch -n 2 -c bash scripts/view/status.sh <project-dir>
 ```
+
+## Logging
+
+Each run writes to two log files.
+
+**Project log** — `<project-dir>/log/harness-TIMESTAMP.log`  
+Created fresh for every run. Lines are tagged by level (`[WARN]`, `[ERROR]`, `[VERBOSE]`; info
+lines are untagged). Set `"log_level"` in `experiment.json` to filter console output; both log
+files always receive all levels regardless of this setting.
+
+**System log** — always-on, accumulates across all runs and all projects:
+- Linux / macOS: `~/.local/share/ai-copyright-reproducibility/logs/harness-TIMESTAMP.log`
+- Windows: `%LOCALAPPDATA%\ai-copyright-reproducibility\logs\harness-TIMESTAMP.log`
+
+Each line in the system log is prefixed with a UTC timestamp
+(`2026-06-17 14:23:01 Loaded config…`) for cross-run correlation. The system log path is
+derived from the OS user-data directory and is not affected by the `locations.log` setting in
+`config.json`.
 
 ## Query types
 
