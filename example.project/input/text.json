@@ -1,0 +1,21 @@
+{
+  "texts": [
+    {
+      "label": "example_text",
+      "content": {
+        "title": {
+          "full": "example text",
+          "short": "example text",
+          "year": 1970
+        },
+        "section_headings": [
+          "Lorem",
+          "ipsum"
+        ],
+        "aliases": {
+          "lorem": "lorem"
+        }
+      }
+    }
+  ]
+}

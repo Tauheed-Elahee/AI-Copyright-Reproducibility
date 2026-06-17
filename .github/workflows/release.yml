@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+            binary: harness
+          - rid: linux-arm64
+            os: ubuntu-latest
+            binary: harness
+          - rid: osx-x64
+            os: macos-latest
+            binary: harness
+          - rid: osx-arm64
+            os: macos-latest
+            binary: harness
+          - rid: win-x64
+            os: windows-latest
+            binary: harness.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Publish
+        run: >
+          dotnet publish src/
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained
+          -p:PublishSingleFile=true
+          -p:AssemblyName=harness
+          -o dist/${{ matrix.rid }}
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-${{ matrix.rid }}
+          path: dist/${{ matrix.rid }}/${{ matrix.binary }}
+
+  release:
+    name: Create release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Package example project
+        run: tar -czf artifacts/example.project.tar.gz example.project/
+
+      - name: Rename binaries with platform suffix
+        run: |
+          for rid in linux-x64 linux-arm64 osx-x64 osx-arm64; do
+            mv artifacts/harness-$rid/harness artifacts/harness-$rid/harness-$rid
+          done
+          mv artifacts/harness-win-x64/harness.exe artifacts/harness-win-x64/harness-win-x64.exe
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/harness-linux-x64/harness-linux-x64
+            artifacts/harness-linux-arm64/harness-linux-arm64
+            artifacts/harness-osx-x64/harness-osx-x64
+            artifacts/harness-osx-arm64/harness-osx-arm64
+            artifacts/harness-win-x64/harness-win-x64.exe
+            artifacts/example.project.tar.gz
+          generate_release_notes: true

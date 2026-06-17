@@ -5,8 +5,9 @@ build/
 **/output/
 **/log/
 
-# Secrets — never commit
+# Secrets — never commit (example.project carries empty placeholder values so it can be committed)
 **/secrets.json
+!example.project/config/secrets.json
 
 # Internal session docs
 CONTEXT/

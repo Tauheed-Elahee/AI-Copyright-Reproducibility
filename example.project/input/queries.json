@@ -1,0 +1,10 @@
+{
+  "queries": [
+    {
+      "label": "example_query",
+      "types": [],
+      "system_message": "",
+      "user_prompt": "What is {title}?"
+    }
+  ]
+}

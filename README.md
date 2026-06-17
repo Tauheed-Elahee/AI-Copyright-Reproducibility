@@ -37,31 +37,71 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 └── *.md                    documentation
 ```
 
-## Prerequisites
+## Download
 
-1. .NET SDK 8.0+ (`dotnet --version`).
-2. `az login` once, signed in as an identity that has the **Cognitive Services User** role on the
-   target Azure AI Foundry resource. A 401/403 on the first call almost always means the role
-   assignment is missing, not a code error.
-3. Copy `config/secrets.template.json` → `secrets.json` at the repo root and fill in your keys.
-4. Network restore access for NuGet (`Azure.Identity`, `OpenAI`).
+Download the binary for your platform from [GitHub Releases](../../releases).  
+Also download `example.project.tar.gz` to use as a starting template.
+
+## Project directory
+
+The harness operates on a **project directory** — a self-contained folder with this layout:
+
+```
+my-study.project/
+├── config.json             location manifest
+├── config/
+│   ├── experiment.json     run settings
+│   ├── deployments.json    deployment arms
+│   └── secrets.json        API keys (never commit this — it is gitignored)
+├── input/
+│   ├── text.json           text library
+│   ├── queries.json        query templates
+│   └── prompts.json        prompt bindings
+├── output/                 run output (created automatically)
+└── log/                    run logs (created automatically)
+```
+
+Copy `example.project/` to start a new study, then edit the files inside it.
 
 ## Configure
 
 Edit `config/experiment.json` to set iteration counts, timing, seeds, and parallelism.  
 Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
 Edit files in `input/` to change the corpus, query templates, or prompt bindings.  
-Edit `config.json` only to change directory locations.
+Edit `config.json` only to change directory locations.  
+Copy `config/secrets.template.json` → `config/secrets.json` and fill in your API keys.
 
 ## Run
 
-Run from the **repo root**:
-
 ```bash
-dotnet run --project src/
+harness <project-dir>   # explicit path
+harness                 # uses current directory if it contains config.json
 ```
 
-Output lands in `output/<timestamp>/`.
+Output lands in `<project-dir>/output/<timestamp>/`.
+
+## Prerequisites (Azure)
+
+1. `az login` once, signed in as an identity with the **Cognitive Services User** role on the
+   target Azure AI Foundry resource. A 401/403 on the first call almost always means the role
+   assignment is missing, not a code error.
+2. Network access for initial Azure token fetch.
+
+## Build from source
+
+Requires .NET SDK 8.0+.
+
+```bash
+dotnet run --project src/ -- <project-dir>
+```
+
+Or build a self-contained binary for your platform:
+
+```bash
+dotnet publish src/ -c Release -r linux-x64 --self-contained \
+  -p:PublishSingleFile=true -p:AssemblyName=harness -o dist/
+./dist/harness <project-dir>
+```
 
 ## Query types
 

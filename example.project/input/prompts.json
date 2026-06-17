@@ -1,0 +1,10 @@
+{
+  "prompts": [
+    {
+      "text": "example_text",
+      "queries": [
+        "example_query"
+      ]
+    }
+  ]
+}
