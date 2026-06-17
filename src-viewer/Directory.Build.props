@@ -1,0 +1,10 @@
+<Project>
+  <!-- Import the root Directory.Build.props so shared settings apply -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <PropertyGroup>
+    <!-- Blazor WASM adds browser-wasm to the restore targets. Override here (before
+         Microsoft.Common.props) so project.assets.json does not conflict with the
+         net8.0-only projects that share build/obj/ via the root Directory.Build.props. -->
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

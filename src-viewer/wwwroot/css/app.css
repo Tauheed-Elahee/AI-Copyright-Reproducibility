@@ -1,0 +1,137 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    background: #fff;
+    color: #222;
+    line-height: 1.55;
+    padding-bottom: 3.5rem;
+}
+
+/* ── Header ── */
+.app-header {
+    background: #1a1a2e;
+    color: #cce;
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.app-title { font-size: 0.85rem; letter-spacing: 0.04em; }
+.header-link { color: #99b; font-size: 0.8rem; text-decoration: none; }
+.header-link:hover { color: #cce; }
+
+/* ── Main content ── */
+main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.5rem 1rem; }
+
+section { margin-bottom: 2rem; }
+
+h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #666;
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.85rem;
+}
+
+/* ── Run summary ── */
+.run-stats {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 0.75rem;
+}
+.run-stats b { color: #111; }
+
+.deployment-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chip {
+    background: #f0f4ff;
+    border: 1px solid #d0d8ee;
+    border-radius: 3px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    color: #334;
+}
+
+/* ── Tables ── */
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th {
+    text-align: left;
+    padding: 0.3rem 0.6rem;
+    border-bottom: 2px solid #ddd;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888;
+    white-space: nowrap;
+}
+td { padding: 0.28rem 0.6rem; border-bottom: 1px solid #f2f2f2; vertical-align: top; }
+tr:hover td { background: #fafafa; }
+.row-shared td { background: #fafff8; }
+.row-shared:hover td { background: #f0faf0; }
+
+.num { text-align: right; }
+.mono { font-family: 'Courier New', Courier, monospace; }
+.hash { color: #778; font-size: 0.78rem; }
+.small { font-size: 0.78rem; color: #666; }
+.cell-error { color: #c33; font-weight: bold; }
+
+/* ── Status / messages ── */
+.status-msg { color: #999; padding: 1.5rem 0; font-size: 0.85rem; }
+.status-msg.hint { padding-top: 0.5rem; }
+.subtitle { font-size: 0.78rem; color: #888; margin-bottom: 0.6rem; }
+
+.error-banner {
+    background: #fff5f5;
+    border: 1px solid #f5c0c0;
+    border-radius: 3px;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.75rem;
+    color: #c33;
+    font-size: 0.82rem;
+}
+.error-banner.warn { background: #fffbf0; border-color: #f0d080; color: #7a5800; }
+
+.loaded-badge {
+    margin-left: 0.75rem;
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 3px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.75rem;
+    color: #2e7d32;
+}
+
+/* ── File load bar (fixed bottom) ── */
+.toggle-label {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    color: #666;
+    cursor: pointer;
+    user-select: none;
+}
+.toggle-label input { margin-right: 0.2rem; }
+
+/* ── File load bar (fixed bottom) ── */
+.file-load-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #f7f7f7;
+    border-top: 1px solid #ddd;
+    padding: 0.5rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: #555;
+    z-index: 100;
+}
+.load-label { white-space: nowrap; }

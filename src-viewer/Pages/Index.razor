@@ -1,0 +1,239 @@
+@page "/"
+@inject HttpClient Http
+
+<PageTitle>Results Viewer</PageTitle>
+
+<div class="file-load-bar">
+    <span class="load-label">Load local manifest.json:</span>
+    <InputFile OnChange="@LoadFile" accept=".json" />
+    @if (_loadedFromFile)
+    {
+        <span class="loaded-badge">local file loaded</span>
+    }
+</div>
+
+@if (_loading)
+{
+    <p class="status-msg">Loading default run&hellip;</p>
+}
+else if (_error != null && _records == null)
+{
+    <div class="error-banner">@_error</div>
+    <p class="status-msg hint">Use the file picker above to load a local manifest.json.</p>
+}
+else if (_records != null)
+{
+    @if (_error != null)
+    {
+        <div class="error-banner warn">@_error</div>
+    }
+
+    <section class="run-summary">
+        <h2>Run</h2>
+        <ul class="run-stats">
+            <li><b>@_runLabel</b></li>
+            <li><b>@_deployments.Count</b> deployment@(_deployments.Count != 1 ? "s" : "")</li>
+            <li><b>@_records.Count</b> records total</li>
+            <li><b>@_successCount</b> OK &middot; <b>@_errorCount</b> error@(_errorCount != 1 ? "s" : "")</li>
+        </ul>
+        @if (_deployments.Count > 0)
+        {
+            <div class="deployment-chips">
+                @foreach (var d in _deployments)
+                {
+                    <span class="chip">@d</span>
+                }
+            </div>
+        }
+    </section>
+
+    <section>
+        <h2>Per-Deployment Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Deployment</th>
+                    <th class="num">Calls</th>
+                    <th class="num">OK</th>
+                    <th class="num">Errors</th>
+                    <th class="num">Avg ms</th>
+                    <th class="num">Avg tokens</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in _deploymentStats)
+                {
+                    <tr>
+                        <td class="mono">@d.Deployment</td>
+                        <td class="num">@d.Total</td>
+                        <td class="num">@d.Success</td>
+                        <td class="num @(d.Errors > 0 ? "cell-error" : "")">@d.Errors</td>
+                        <td class="num">@d.AvgMs</td>
+                        <td class="num">@d.AvgTokens</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Identity Groups</h2>
+        <p class="subtitle">
+            Records grouped by content SHA-256 — identical entries share the same LLM output.
+            @_totalGroups group@(_totalGroups != 1 ? "s" : "") total
+            (@_singletonCount singleton@(_singletonCount != 1 ? "s" : "") hidden).
+            Showing @_identityGroups.Count group@(_identityGroups.Count != 1 ? "s" : "") with count &ge; 2.
+            <label class="toggle-label">
+                <input type="checkbox" @bind="_showSingletons" />
+                show all
+            </label>
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hash</th>
+                    <th class="num">Count</th>
+                    <th>Deployments</th>
+                    <th>Text &middot; Query</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in _showSingletons ? _allIdentityGroups : _identityGroups)
+                {
+                    <tr class="@(g.Deployments.Count > 1 ? "row-shared" : "")">
+                        <td class="mono hash">@g.Hash</td>
+                        <td class="num">@g.Count</td>
+                        <td class="mono small">@string.Join(", ", g.Deployments)</td>
+                        <td class="small">@g.Label</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    private List<RunRecord>? _records;
+    private string?          _error;
+    private bool             _loading       = true;
+    private bool             _loadedFromFile;
+    private string           _runLabel      = "";
+    private List<string>     _deployments   = new();
+    private int              _successCount;
+    private int              _errorCount;
+
+    private List<DeploymentStat> _deploymentStats    = new();
+    private List<IdentityGroup>  _identityGroups     = new();
+    private List<IdentityGroup>  _allIdentityGroups  = new();
+    private int                  _totalGroups;
+    private int                  _singletonCount;
+    private bool                 _showSingletons;
+
+    private static readonly JsonSerializerOptions _jsonOpts =
+        new() { PropertyNameCaseInsensitive = true };
+
+    private record DeploymentStat(
+        string Deployment, int Total, int Success, int Errors,
+        long AvgMs, string AvgTokens);
+
+    private record IdentityGroup(
+        string Hash, int Count, List<string> Deployments, string Label);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _records = await Http.GetFromJsonAsync<List<RunRecord>>("data/manifest.json", _jsonOpts);
+            if (_records is { Count: > 0 }) ProcessRecords(_records);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Could not load default run: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        _loading        = true;
+        _error          = null;
+        _loadedFromFile = false;
+        StateHasChanged();
+        try
+        {
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+            var loaded = await JsonSerializer.DeserializeAsync<List<RunRecord>>(stream, _jsonOpts);
+            if (loaded is null || loaded.Count == 0)
+            {
+                _error = "File deserialized to an empty list — is this a manifest.json from the harness?";
+            }
+            else
+            {
+                _records        = loaded;
+                _loadedFromFile = true;
+                ProcessRecords(_records);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Could not read file: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ProcessRecords(List<RunRecord> records)
+    {
+        _runLabel     = records[0].TimestampUtc;
+        _deployments  = records.Select(r => r.Deployment).Distinct().OrderBy(d => d).ToList();
+        _successCount = records.Count(r => r.Status == 200);
+        _errorCount   = records.Count(r => r.Error != null || r.Status != 200);
+
+        _deploymentStats = records
+            .GroupBy(r => r.Deployment)
+            .Select(g =>
+            {
+                var tokens = g
+                    .Where(r => r.CompletionTokens.HasValue)
+                    .Select(r => r.CompletionTokens!.Value)
+                    .ToList();
+                string avgTokens = tokens.Count > 0
+                    ? ((int)tokens.Average()).ToString()
+                    : "—";
+                return new DeploymentStat(
+                    g.Key,
+                    g.Count(),
+                    g.Count(r => r.Status == 200),
+                    g.Count(r => r.Error != null || r.Status != 200),
+                    (long)g.Average(r => r.DurationMs),
+                    avgTokens);
+            })
+            .OrderBy(s => s.Deployment)
+            .ToList();
+
+        _allIdentityGroups = records
+            .Where(r => r.ContentSha256Short != null)
+            .GroupBy(r => r.ContentSha256Short!)
+            .Select(g =>
+            {
+                var first = g.First();
+                string label = $"{first.TextLabel} · {first.QueryLabel}";
+                return new IdentityGroup(
+                    g.Key,
+                    g.Count(),
+                    g.Select(r => r.Deployment).Distinct().OrderBy(d => d).ToList(),
+                    label);
+            })
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        _totalGroups    = _allIdentityGroups.Count;
+        _singletonCount = _allIdentityGroups.Count(g => g.Count == 1);
+        _identityGroups = _allIdentityGroups.Where(g => g.Count >= 2).ToList();
+    }
+}

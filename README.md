@@ -29,6 +29,7 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 │   │   ├── Azure/          AzureModeApi, AzureAgentApiExecutor
 │   │   └── Standard/       StandardOpenAIExecutor
 │   └── Utils/              HarnessUtils, ScoringUtils, HttpPolicies, Logger
+├── src-viewer/             Blazor WASM results viewer (deployed to /viewer/ on GitHub Pages)
 ├── tests/                  xUnit test project
 ├── scripts/
 │   ├── build/              build.sh / build.bat
@@ -177,6 +178,24 @@ Each entry in `config/queries.json` may include a `types` array. Two type string
 | `"order_task"` | Requires `"list_task"`. Additionally scores position accuracy (`position_score`), minimum relocations (`min_moves`), and order percentage (`order_pct`). |
 
 Unknown strings in `types` are ignored. Queries with an empty `types` array are treated as title-recall tasks and scored only for `title_hit` and `textbook_hit`.
+
+## Results viewer
+
+A Blazor WASM results viewer is hosted at
+[ai-copyright-reproducibility.tauheed-elahee.com/viewer/](https://ai-copyright-reproducibility.tauheed-elahee.com/viewer/).
+It loads the committed `medical-texts.project` run by default and renders:
+
+- **Run summary** — timestamp, deployment count, total records, success/error breakdown
+- **Per-deployment summary** — calls, success count, error count, average duration, average completion tokens
+- **Identity groups** — records grouped by content SHA-256, showing which deployments independently produced identical output
+
+To view a local run, use the **Load local manifest.json** button in the bottom bar and select any `manifest.json` from your `output/<timestamp>/` directory.
+
+The viewer is a static site built in CI from `src-viewer/` and deployed to `/viewer/` alongside the Jekyll documentation. To run it locally:
+
+```bash
+dotnet run --project src-viewer/ --pathbase /viewer/
+```
 
 ## Methodological notes
 

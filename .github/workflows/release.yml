@@ -32,12 +32,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Install wasm workload
+        run: dotnet workload install wasm-tools
+
+      - name: Build results viewer
+        run: dotnet publish src-viewer/ -c Release -o dist/viewer/
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/jekyll-build-pages@v1
         with:
           source: ./docs
           destination: ./_site
+
+      - name: Merge viewer into site
+        run: cp -r dist/viewer/wwwroot/. _site/viewer/
 
       - uses: actions/upload-pages-artifact@v3
 
