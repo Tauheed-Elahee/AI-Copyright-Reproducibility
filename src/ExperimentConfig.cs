@@ -78,8 +78,9 @@ namespace AICopyrightReproducibility
     public sealed class LocationsConfig
     {
         public LocationConfig Config { get; set; } = new() { Dir = "config" };
+        public LocationConfig Input  { get; set; } = new() { Dir = "input"  };
         public LocationConfig Output { get; set; } = new() { Dir = "output" };
-        public LocationConfig Log    { get; set; } = new() { Dir = "log" };
+        public LocationConfig Log    { get; set; } = new() { Dir = "log"    };
     }
 
     public sealed class ExperimentConfig

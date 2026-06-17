@@ -21,17 +21,19 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 
 ```
 /
-├── config/                     run configuration and data
-│   ├── config.json             experiment settings (iterations, timing, seeds)
-│   ├── deployments.config.json deployment arms (endpoints, parameters)
-│   ├── queries.config.json     prompt templates
-│   ├── prompts.config.json     text × query bindings
-│   ├── text.db.json            text library (ground truth sections, aliases)
+├── config.json             experiment settings (iterations, timing, seeds, locations)
+├── config/                 operational configuration
+│   ├── deployments.json    deployment arms (endpoints, parameters)
 │   └── secrets.template.json  copy → secrets.json, fill in API keys
-├── src/                        C# source + project file
-├── docs/                       GitHub Pages
-├── output/                     run output (gitignored)
-└── *.md                        documentation
+├── input/                  research content (edit to change what is tested)
+│   ├── text.json           text library (ground truth sections, aliases)
+│   ├── queries.json        query templates
+│   └── prompts.json        text × query bindings
+├── src/                    C# source + project file
+├── docs/                   GitHub Pages
+├── output/                 run output (gitignored)
+├── log/                    run logs (gitignored)
+└── *.md                    documentation
 ```
 
 ## Prerequisites
@@ -45,8 +47,9 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 
 ## Configure
 
-Edit `config/config.json` to set iteration counts, timing, and seeds.  
-Edit `config/deployments.config.json` to add, remove, or adjust deployment arms.
+Edit `config.json` to set iteration counts, timing, seeds, and directory locations.  
+Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
+Edit files in `input/` to change the corpus, query templates, or prompt bindings.
 
 ## Run
 

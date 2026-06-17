@@ -44,13 +44,14 @@ namespace AICopyrightReproducibility
             static string AbsPath(string dir, string file) =>
                 Path.IsPathRooted(file) ? file : Path.Combine(dir, file);
 
-            string locDir = Path.Combine(configDir, cfg.Experiment.Locations.Config.Dir);
+            string configLocDir = Path.Combine(configDir, cfg.Experiment.Locations.Config.Dir);
+            string inputLocDir  = Path.Combine(configDir, cfg.Experiment.Locations.Input.Dir);
 
             // Load query library
             Dictionary<string, QueryConfig> queriesDict = new();
-            if (cfg.Experiment.Locations.Config.Files?.Queries is { } queriesFile)
+            if (cfg.Experiment.Locations.Input.Files?.Queries is { } queriesFile)
             {
-                string p = AbsPath(locDir, queriesFile);
+                string p = AbsPath(inputLocDir, queriesFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
                 cfg.Queries = doc.RootElement.GetProperty("queries")
                     .EnumerateArray()
@@ -63,7 +64,7 @@ namespace AICopyrightReproducibility
             // Load deployments
             if (cfg.Experiment.Locations.Config.Files?.Deployments is { } deploymentsFile)
             {
-                string p = AbsPath(locDir, deploymentsFile);
+                string p = AbsPath(configLocDir, deploymentsFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
                 cfg.Deployments = doc.RootElement.GetProperty("deployments")
                     .EnumerateArray()
@@ -74,9 +75,9 @@ namespace AICopyrightReproducibility
 
             // Load text library
             var textsDict = new Dictionary<string, TextEntry>(StringComparer.Ordinal);
-            if (cfg.Experiment.Locations.Config.Files?.Texts is { } textsFile)
+            if (cfg.Experiment.Locations.Input.Files?.Texts is { } textsFile)
             {
-                string p = AbsPath(locDir, textsFile);
+                string p = AbsPath(inputLocDir, textsFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
                 foreach (TextDbEntry entry in doc.RootElement.GetProperty("texts")
                     .EnumerateArray()
@@ -100,9 +101,9 @@ namespace AICopyrightReproducibility
 
             // Load prompts and bind
             List<BoundPrompt> boundPrompts = new();
-            if (cfg.Experiment.Locations.Config.Files?.Prompts is { } promptsFile)
+            if (cfg.Experiment.Locations.Input.Files?.Prompts is { } promptsFile)
             {
-                string p = AbsPath(locDir, promptsFile);
+                string p = AbsPath(inputLocDir, promptsFile);
                 using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
                 List<PromptEntry> prompts = doc.RootElement.GetProperty("prompts")
                     .EnumerateArray()
@@ -116,7 +117,7 @@ namespace AICopyrightReproducibility
             Directory.CreateDirectory(outDir);
             OutputWriter.WriteRunConfig(cfg, outDir);
 
-            string secretsPath = Path.Combine(configDir, cfg.Experiment.Locations.Config.Dir, "secrets.json");
+            string secretsPath = Path.Combine(configLocDir, "secrets.json");
             Dictionary<string, string> secrets = File.Exists(secretsPath)
                 ? JsonSerializer.Deserialize<Dictionary<string, string>>(
                       File.ReadAllText(secretsPath), readOpts) ?? new()

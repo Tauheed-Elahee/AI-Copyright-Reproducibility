@@ -9,10 +9,15 @@
       "config": {
         "dir": "config",
         "files": {
-          "queries":     "queries.json",
-          "texts":       "text.json",
-          "prompts":     "prompts.json",
           "deployments": "deployments.json"
+        }
+      },
+      "input": {
+        "dir": "input",
+        "files": {
+          "texts":       "text.json",
+          "queries":     "queries.json",
+          "prompts":     "prompts.json"
         }
       },
       "output": { "dir": "output" },
