@@ -2,8 +2,8 @@
 build/
 
 # Runtime output
-output/
-log/
+**./output/
+**./log/
 
 # Secrets — never commit
 config/secrets.json
