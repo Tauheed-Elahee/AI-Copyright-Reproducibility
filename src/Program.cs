@@ -15,10 +15,26 @@ namespace AICopyrightReproducibility
     {
         public static async Task<int> Main(string[] args)
         {
-            string configPath = args.Length > 0 ? args[0] : "config.json";
+            string projectDir;
+            if (args.Length > 0)
+            {
+                projectDir = Path.GetFullPath(args[0]);
+            }
+            else if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "config.json")))
+            {
+                projectDir = Directory.GetCurrentDirectory();
+            }
+            else
+            {
+                Console.Error.WriteLine("Usage: harness <project-dir>");
+                Console.Error.WriteLine("  Or run from within a project directory that contains config.json.");
+                return 1;
+            }
+
+            string configPath = Path.Combine(projectDir, "config.json");
             if (!File.Exists(configPath))
             {
-                Console.Error.WriteLine($"Config file not found: {configPath}");
+                Console.Error.WriteLine($"config.json not found in: {projectDir}");
                 return 1;
             }
             JsonSerializerOptions readOpts = new JsonSerializerOptions
@@ -27,7 +43,7 @@ namespace AICopyrightReproducibility
                 PropertyNameCaseInsensitive = true,
                 Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
             };
-            string configDir = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? ".";
+            string configDir = projectDir;
             string stamp     = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
 
             RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
