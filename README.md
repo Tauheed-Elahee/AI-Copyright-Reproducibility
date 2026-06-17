@@ -197,6 +197,17 @@ The viewer is a static site built in CI from `src-viewer/` and deployed to `/vie
 dotnet run --project src-viewer/ --pathbase /viewer/
 ```
 
+### Updating the default dataset
+
+After a new harness run, replace the viewer's default manifest with:
+
+```bash
+bash scripts/viewer/update-data.sh <project-dir>/output/<timestamp>/manifest.json
+scripts\viewer\update-data.bat <project-dir>\output\<timestamp>\manifest.json   # Windows
+```
+
+Then commit `src-viewer/wwwroot/data/manifest.json`. The updated data deploys on the next tagged release.
+
 ## Methodological notes
 
 - **Why hash content, not the envelope.** The response `id` and `created` fields change on every
