@@ -42,6 +42,7 @@ namespace AICopyrightReproducibility
                 Console.Error.WriteLine($"config.json not found in: {projectDir}");
                 return 1;
             }
+
             JsonSerializerOptions readOpts = new JsonSerializerOptions
             {
                 PropertyNamingPolicy        = JsonNamingPolicy.SnakeCaseLower,
@@ -51,14 +52,24 @@ namespace AICopyrightReproducibility
             string configDir = projectDir;
             string stamp     = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
 
-            RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
-                File.ReadAllText(configPath), readOpts)
-                ?? throw new InvalidOperationException("Failed to deserialise config.");
+            RunConfig cfg;
+            StreamWriter logWriter;
+            try
+            {
+                cfg = JsonSerializer.Deserialize<RunConfig>(
+                    File.ReadAllText(configPath), readOpts)
+                    ?? throw new InvalidOperationException("Failed to deserialise config.");
 
-            string logDir = Path.Combine(configDir, cfg.Locations.Log.Dir);
-            Directory.CreateDirectory(logDir);
-            StreamWriter logWriter = new StreamWriter(
-                Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+                string logDir = Path.Combine(configDir, cfg.Locations.Log.Dir);
+                Directory.CreateDirectory(logDir);
+                logWriter = new StreamWriter(
+                    Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[ERROR] {ex.Message}");
+                return 1;
+            }
 
             StreamWriter? sysLogWriter = null;
             try
@@ -87,142 +98,148 @@ namespace AICopyrightReproducibility
                 _         => Logger.Level.Info
             };
 
-            string configLocDir = Path.Combine(configDir, cfg.Locations.Config.Dir);
-
-            // Load experiment settings
-            if (cfg.Locations.Config.Files?.Experiment is { } experimentFile)
+            try
             {
-                string p = AbsPath(configLocDir, experimentFile);
-                cfg.Experiment = JsonSerializer.Deserialize<ExperimentConfig>(
-                    File.ReadAllText(p), readOpts)
-                    ?? throw new InvalidOperationException("Failed to deserialise experiment config.");
-                logger.SetLevel(ParseLevel(cfg.Experiment.LogLevel));
-                logger.Info($"Loaded experiment: {p}");
-            }
-            string inputLocDir  = Path.Combine(configDir, cfg.Locations.Input.Dir);
+                string configLocDir = Path.Combine(configDir, cfg.Locations.Config.Dir);
 
-            // Load query library
-            Dictionary<string, QueryConfig> queriesDict = new();
-            if (cfg.Locations.Input.Files?.Queries is { } queriesFile)
-            {
-                string p = AbsPath(inputLocDir, queriesFile);
-                using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                cfg.Queries = doc.RootElement.GetProperty("queries")
-                    .EnumerateArray()
-                    .Select(e => JsonSerializer.Deserialize<QueryConfig>(e.GetRawText(), readOpts)!)
-                    .ToList();
-                queriesDict = cfg.Queries.ToDictionary(q => q.Label);
-                logger.Info($"Loaded queries: {p}");
-            }
-
-            // Load deployments
-            if (cfg.Locations.Config.Files?.Deployments is { } deploymentsFile)
-            {
-                string p = AbsPath(configLocDir, deploymentsFile);
-                using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                cfg.Deployments = doc.RootElement.GetProperty("deployments")
-                    .EnumerateArray()
-                    .Select(e => JsonSerializer.Deserialize<DeploymentConfig>(e.GetRawText(), readOpts)!)
-                    .ToList();
-                logger.Info($"Loaded deployments: {p}");
-            }
-
-            // Load text library
-            var textsDict = new Dictionary<string, TextEntry>(StringComparer.Ordinal);
-            if (cfg.Locations.Input.Files?.Texts is { } textsFile)
-            {
-                string p = AbsPath(inputLocDir, textsFile);
-                using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                foreach (TextDbEntry entry in doc.RootElement.GetProperty("texts")
-                    .EnumerateArray()
-                    .Select(e => JsonSerializer.Deserialize<TextDbEntry>(e.GetRawText(), readOpts)!))
+                if (cfg.Locations.Config.Files?.Experiment is { } experimentFile)
                 {
-                    var extras = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    extras["full"]  = entry.Content.Title.Full;
-                    extras["short"] = entry.Content.Title.Short;
-                    if (entry.Content.Title.ExtraFields is not null)
-                        foreach (var (k, v) in entry.Content.Title.ExtraFields)
-                            FlattenJson(v, k, extras);
-                    textsDict[entry.Label] = new TextEntry(
-                        entry.Content.Title.Full,
-                        entry.Content.Title.Short,
-                        entry.Content.SectionHeadings,
-                        new Dictionary<string, string>(entry.Content.Aliases, StringComparer.OrdinalIgnoreCase),
-                        extras);
+                    string p = AbsPath(configLocDir, experimentFile);
+                    cfg.Experiment = JsonSerializer.Deserialize<ExperimentConfig>(
+                        File.ReadAllText(p), readOpts)
+                        ?? throw new InvalidOperationException("Failed to deserialise experiment config.");
+                    logger.SetLevel(ParseLevel(cfg.Experiment.LogLevel));
+                    logger.Info($"Loaded experiment: {p}");
                 }
-                logger.Info($"Loaded texts  : {p}");
-            }
 
-            // Load prompts and bind
-            List<BoundPrompt> boundPrompts = new();
-            if (cfg.Locations.Input.Files?.Prompts is { } promptsFile)
-            {
-                string p = AbsPath(inputLocDir, promptsFile);
-                using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                List<PromptEntry> prompts = doc.RootElement.GetProperty("prompts")
-                    .EnumerateArray()
-                    .Select(e => JsonSerializer.Deserialize<PromptEntry>(e.GetRawText(), readOpts)!)
-                    .ToList();
-                boundPrompts = HarnessUtils.BindPrompts(queriesDict, textsDict, prompts);
-                logger.Info($"Loaded prompts: {p}");
-            }
+                string inputLocDir = Path.Combine(configDir, cfg.Locations.Input.Dir);
 
-            string outDir = Path.Combine(configDir, cfg.Locations.Output.Dir, stamp);
-            Directory.CreateDirectory(outDir);
-            OutputWriter.WriteRunConfig(cfg, outDir);
-
-            string secretsPath = Path.Combine(configLocDir, "secrets.json");
-            Dictionary<string, string> secrets = File.Exists(secretsPath)
-                ? JsonSerializer.Deserialize<Dictionary<string, string>>(
-                      File.ReadAllText(secretsPath), readOpts) ?? new()
-                : new();
-            HarnessUtils.ResolveSecrets(cfg, secrets);
-            logger.Info($"Loaded secrets: {secretsPath}");
-
-            string fallbackScope = cfg.Deployments
-                .Select(a => a.Connection.TokenScope)
-                .FirstOrDefault(s => s != null)
-                ?? "https://ai.azure.com/.default";
-
-            bool needsAzure = cfg.Deployments.Any(d =>
-                d.Mode is DeploymentMode.AzureModeApi or DeploymentMode.AzureAgentApi);
-            DefaultAzureCredential? credential = needsAzure ? new DefaultAzureCredential() : null;
-            using HttpClient http = new HttpClient();
-
-            Dictionary<string, IDeploymentExecutor> executors = cfg.Deployments.ToDictionary(
-                d => d.Label,
-                d => d.Mode switch
+                Dictionary<string, QueryConfig> queriesDict = new();
+                if (cfg.Locations.Input.Files?.Queries is { } queriesFile)
                 {
-                    DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential!, fallbackScope, logger),
-                    DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http, credential!, d, fallbackScope, logger),
-                    DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(d, logger),
-                    _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
-                });
+                    string p = AbsPath(inputLocDir, queriesFile);
+                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
+                    cfg.Queries = doc.RootElement.GetProperty("queries")
+                        .EnumerateArray()
+                        .Select(e => JsonSerializer.Deserialize<QueryConfig>(e.GetRawText(), readOpts)!)
+                        .ToList();
+                    queriesDict = cfg.Queries.ToDictionary(q => q.Label);
+                    logger.Info($"Loaded queries: {p}");
+                }
 
-            logger.Info($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
-            logger.Info($"Bound prompts: {boundPrompts.Count} ({string.Join(", ", boundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");
-            logger.Info($"Sets    : {cfg.Experiment.Iterations.Set}  Reps/set: {cfg.Experiment.Iterations.Rep}");
-            logger.Info(new string('-', 80));
+                if (cfg.Locations.Config.Files?.Deployments is { } deploymentsFile)
+                {
+                    string p = AbsPath(configLocDir, deploymentsFile);
+                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
+                    cfg.Deployments = doc.RootElement.GetProperty("deployments")
+                        .EnumerateArray()
+                        .Select(e => JsonSerializer.Deserialize<DeploymentConfig>(e.GetRawText(), readOpts)!)
+                        .ToList();
+                    logger.Info($"Loaded deployments: {p}");
+                }
 
-            using HarnessRunner runner = new HarnessRunner(cfg, boundPrompts, executors, outDir, logger);
-            List<RunRecord> records = await runner.RunAllAsync();
+                var textsDict = new Dictionary<string, TextEntry>(StringComparer.Ordinal);
+                if (cfg.Locations.Input.Files?.Texts is { } textsFile)
+                {
+                    string p = AbsPath(inputLocDir, textsFile);
+                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
+                    foreach (TextDbEntry entry in doc.RootElement.GetProperty("texts")
+                        .EnumerateArray()
+                        .Select(e => JsonSerializer.Deserialize<TextDbEntry>(e.GetRawText(), readOpts)!))
+                    {
+                        var extras = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        extras["full"]  = entry.Content.Title.Full;
+                        extras["short"] = entry.Content.Title.Short;
+                        if (entry.Content.Title.ExtraFields is not null)
+                            foreach (var (k, v) in entry.Content.Title.ExtraFields)
+                                FlattenJson(v, k, extras);
+                        textsDict[entry.Label] = new TextEntry(
+                            entry.Content.Title.Full,
+                            entry.Content.Title.Short,
+                            entry.Content.SectionHeadings,
+                            new Dictionary<string, string>(entry.Content.Aliases, StringComparer.OrdinalIgnoreCase),
+                            extras);
+                    }
+                    logger.Info($"Loaded texts  : {p}");
+                }
 
-            JsonSerializerOptions jsonOpts = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(Path.Combine(outDir, "manifest.json"),
-                JsonSerializer.Serialize(records, jsonOpts));
-            OutputWriter.WriteManifestCsv(records, Path.Combine(outDir, "manifest.csv"));
+                List<BoundPrompt> boundPrompts = new();
+                if (cfg.Locations.Input.Files?.Prompts is { } promptsFile)
+                {
+                    string p = AbsPath(inputLocDir, promptsFile);
+                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
+                    List<PromptEntry> prompts = doc.RootElement.GetProperty("prompts")
+                        .EnumerateArray()
+                        .Select(e => JsonSerializer.Deserialize<PromptEntry>(e.GetRawText(), readOpts)!)
+                        .ToList();
+                    boundPrompts = HarnessUtils.BindPrompts(queriesDict, textsDict, prompts);
+                    logger.Info($"Loaded prompts: {p}");
+                }
 
-            OutputWriter.WriteIdentityGroups(records, logger);
-            if (records.Any(r => r.SectionCount > 0))
-            {
-                OutputWriter.WriteSummaryCountsCsv(records, Path.Combine(outDir, "summary_counts.csv"));
-                OutputWriter.WriteSummaryPctCsv(records, Path.Combine(outDir, "summary_pct.csv"));
-                OutputWriter.WriteConsoleSummary(records, logger);
-                OutputWriter.WriteConsolePctSummary(records, logger);
+                string outDir = Path.Combine(configDir, cfg.Locations.Output.Dir, stamp);
+                Directory.CreateDirectory(outDir);
+                OutputWriter.WriteRunConfig(cfg, outDir);
+
+                string secretsPath = Path.Combine(configLocDir, "secrets.json");
+                Dictionary<string, string> secrets = File.Exists(secretsPath)
+                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(
+                          File.ReadAllText(secretsPath), readOpts) ?? new()
+                    : new();
+                HarnessUtils.ResolveSecrets(cfg, secrets);
+                logger.Info($"Loaded secrets: {secretsPath}");
+
+                string fallbackScope = cfg.Deployments
+                    .Select(a => a.Connection.TokenScope)
+                    .FirstOrDefault(s => s != null)
+                    ?? "https://ai.azure.com/.default";
+
+                bool needsAzure = cfg.Deployments.Any(d =>
+                    d.Mode is DeploymentMode.AzureModeApi or DeploymentMode.AzureAgentApi);
+                DefaultAzureCredential? credential = needsAzure ? new DefaultAzureCredential() : null;
+
+                bool needsHttpClient = cfg.Deployments.Any(d => d.Mode is DeploymentMode.AzureAgentApi);
+                using HttpClient? http = needsHttpClient ? new HttpClient() : null;
+
+                Dictionary<string, IDeploymentExecutor> executors = cfg.Deployments.ToDictionary(
+                    d => d.Label,
+                    d => d.Mode switch
+                    {
+                        DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential!, fallbackScope, logger),
+                        DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http!, credential!, d, fallbackScope, logger),
+                        DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(d, logger),
+                        _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
+                    });
+
+                logger.Info($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
+                logger.Info($"Bound prompts: {boundPrompts.Count} ({string.Join(", ", boundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");
+                logger.Info($"Sets    : {cfg.Experiment.Iterations.Set}  Reps/set: {cfg.Experiment.Iterations.Rep}");
+                logger.Info(new string('-', 80));
+
+                using HarnessRunner runner = new HarnessRunner(cfg, boundPrompts, executors, outDir, logger);
+                List<RunRecord> records = await runner.RunAllAsync();
+
+                JsonSerializerOptions jsonOpts = new JsonSerializerOptions { WriteIndented = true };
+                File.WriteAllText(Path.Combine(outDir, "manifest.json"),
+                    JsonSerializer.Serialize(records, jsonOpts));
+                OutputWriter.WriteManifestCsv(records, Path.Combine(outDir, "manifest.csv"));
+
+                OutputWriter.WriteIdentityGroups(records, logger);
+                if (records.Any(r => r.SectionCount > 0))
+                {
+                    OutputWriter.WriteSummaryCountsCsv(records, Path.Combine(outDir, "summary_counts.csv"));
+                    OutputWriter.WriteSummaryPctCsv(records, Path.Combine(outDir, "summary_pct.csv"));
+                    OutputWriter.WriteConsoleSummary(records, logger);
+                    OutputWriter.WriteConsolePctSummary(records, logger);
+                }
+
+                logger.Info($"\nOutput written to: {Path.GetFullPath(outDir)}");
+                return 0;
             }
-
-            logger.Info($"\nOutput written to: {Path.GetFullPath(outDir)}");
-            return 0;
+            catch (Exception ex)
+            {
+                logger.Error($"Fatal: {ex.Message}");
+                return 1;
+            }
         }
 
         private static void FlattenJson(JsonElement element, string prefix, Dictionary<string, string> result)
