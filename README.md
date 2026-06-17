@@ -58,6 +58,17 @@ dotnet run --project src/
 
 Output lands in `output/<timestamp>/`.
 
+## Query types
+
+Each entry in `config/queries.json` may include a `types` array. Two type strings are recognised by the harness:
+
+| Type string | Effect |
+|---|---|
+| `"list_task"` | Response is parsed for bulleted list items (`- …`); exact matches, coverage, hallucinations, and first-item accuracy are scored. |
+| `"order_task"` | Requires `"list_task"`. Additionally scores position accuracy (`position_score`), minimum relocations (`min_moves`), and order percentage (`order_pct`). |
+
+Unknown strings in `types` are ignored. Queries with an empty `types` array are treated as title-recall tasks and scored only for `title_hit` and `textbook_hit`.
+
 ## Methodological notes
 
 - **Why hash content, not the envelope.** The response `id` and `created` fields change on every
