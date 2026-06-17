@@ -1,8 +1,8 @@
 {
   "experiment": {
     "iterations": {
-      "set": 1,
-      "rep": 2
+      "set": 20,
+      "rep": 10
     },
     "omit_null_fields": true,
     "output_root": "output",
@@ -15,7 +15,7 @@
     "timing": {
       "pause": {
         "run": {
-          "set":    300,
+          "set":    60,
           "prompt":   0,
           "rep":      5,
           "deployment": 0
@@ -29,6 +29,14 @@
           "deployment": 20
         },
         "content": 42
+      }
+    },
+    "parallel": {
+      "max_concurrency": 6,
+      "level": {
+        "deployment": true,
+        "rep":        true,
+        "prompt":     true
       }
     }
   }
