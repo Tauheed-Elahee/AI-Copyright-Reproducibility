@@ -113,7 +113,7 @@ namespace AICopyrightReproducibility
             Directory.CreateDirectory(outDir);
             OutputWriter.WriteRunConfig(cfg, outDir);
 
-            string secretsPath = Path.Combine(configDir, "secrets.json");
+            string secretsPath = Path.Combine(configDir, "config", "secrets.json");
             Dictionary<string, string> secrets = File.Exists(secretsPath)
                 ? JsonSerializer.Deserialize<Dictionary<string, string>>(
                       File.ReadAllText(secretsPath), readOpts) ?? new()

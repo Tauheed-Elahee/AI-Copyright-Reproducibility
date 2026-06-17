@@ -2,4 +2,4 @@
 set -e
 dotnet restore src/
 dotnet build   src/
-dotnet run     --project src/AICopyrightReproducibility.csproj config/config.json
+dotnet run     --project src/AICopyrightReproducibility.csproj config.json
