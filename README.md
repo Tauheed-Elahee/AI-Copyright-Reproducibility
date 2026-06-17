@@ -28,11 +28,13 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 │   │   ├── Azure/          AzureModeApi, AzureAgentApiExecutor
 │   │   └── Standard/       StandardOpenAIExecutor
 │   └── Utils/              HarnessUtils, ScoringUtils, HttpPolicies, TeeWriter
+├── tests/                  xUnit test project
 ├── scripts/
 │   ├── build/              build.sh / build.bat
 │   ├── run/                run.sh   / run.bat
+│   ├── test/               test.sh  / test.bat
 │   └── view/               status.sh / status.bat
-├── .github/workflows/      release.yml — publishes binaries on version tag
+├── .github/workflows/      release.yml — tests then publishes binaries on version tag
 ├── docs/                   GitHub Pages
 └── *.md                    documentation
 ```
@@ -105,7 +107,7 @@ dotnet publish src/ -c Release -r linux-x64 --self-contained \
 
 ## Scripts
 
-All scripts must be run from the **repo root**. Each requires a `<project-dir>` argument and exits with an error if omitted.
+All scripts must be run from the **repo root**. Scripts that accept a `<project-dir>` argument exit with an error if it is omitted.
 
 ### Build
 
@@ -114,6 +116,15 @@ Restores NuGet packages and compiles the project. Does not run.
 ```bash
 bash scripts/build/build.sh
 scripts\build\build.bat          # Windows
+```
+
+### Test
+
+Restores and runs the xUnit test suite.
+
+```bash
+bash scripts/test/test.sh
+scripts\test\test.bat            # Windows
 ```
 
 ### Run
