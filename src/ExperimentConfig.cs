@@ -69,12 +69,24 @@ namespace AICopyrightReproducibility
         public string? Deployments { get; set; }
     }
 
+    public sealed class LocationConfig
+    {
+        public string      Dir   { get; set; } = "";
+        public FileConfig? Files { get; set; }
+    }
+
+    public sealed class LocationsConfig
+    {
+        public LocationConfig Config { get; set; } = new() { Dir = "config" };
+        public LocationConfig Output { get; set; } = new() { Dir = "output" };
+        public LocationConfig Log    { get; set; } = new() { Dir = "log" };
+    }
+
     public sealed class ExperimentConfig
     {
         public IterationsConfig    Iterations     { get; set; } = new();
         public bool                OmitNullFields { get; set; } = true;
-        public string              OutputRoot     { get; set; } = "output";
-        public FileConfig          File           { get; set; } = new();
+        public LocationsConfig     Locations      { get; set; } = new();
         public ParallelConfig      Parallel       { get; set; } = new();
         public RetryConfig         Retry          { get; set; } = new();
         public TimingConfig        Timing         { get; set; } = new();

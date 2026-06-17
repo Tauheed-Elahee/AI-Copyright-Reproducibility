@@ -5,12 +5,18 @@
       "rep": 10
     },
     "omit_null_fields": true,
-    "output_root": "output",
-    "file": {
-      "queries":     "config/queries.config.json",
-      "texts":       "config/text.db.json",
-      "prompts":     "config/prompts.config.json",
-      "deployments": "config/deployments.config.json"
+    "locations": {
+      "config": {
+        "dir": "config",
+        "files": {
+          "queries":     "queries.config.json",
+          "texts":       "text.db.json",
+          "prompts":     "prompts.config.json",
+          "deployments": "deployments.config.json"
+        }
+      },
+      "output": { "dir": "output" },
+      "log":    { "dir": "log"    }
     },
     "timing": {
       "pause": {
