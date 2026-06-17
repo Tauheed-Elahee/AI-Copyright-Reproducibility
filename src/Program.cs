@@ -60,12 +60,17 @@ namespace AICopyrightReproducibility
             StreamWriter logWriter = new StreamWriter(
                 Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
 
-            string sysLogDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "ai-copyright-reproducibility", "logs");
-            Directory.CreateDirectory(sysLogDir);
-            StreamWriter sysLogWriter = new StreamWriter(
-                Path.Combine(sysLogDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+            StreamWriter? sysLogWriter = null;
+            try
+            {
+                string sysLogDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "ai-copyright-reproducibility", "logs");
+                Directory.CreateDirectory(sysLogDir);
+                sysLogWriter = new StreamWriter(
+                    Path.Combine(sysLogDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+            }
+            catch { /* system log unavailable (e.g. read-only environment); continue without it */ }
 
             using Logger logger = new Logger(Console.Out, Console.Error, logWriter,
                                              Logger.Level.Info, sysLogWriter);
@@ -179,15 +184,17 @@ namespace AICopyrightReproducibility
                 .FirstOrDefault(s => s != null)
                 ?? "https://ai.azure.com/.default";
 
-            DefaultAzureCredential credential = new DefaultAzureCredential();
+            bool needsAzure = cfg.Deployments.Any(d =>
+                d.Mode is DeploymentMode.AzureModeApi or DeploymentMode.AzureAgentApi);
+            DefaultAzureCredential? credential = needsAzure ? new DefaultAzureCredential() : null;
             using HttpClient http = new HttpClient();
 
             Dictionary<string, IDeploymentExecutor> executors = cfg.Deployments.ToDictionary(
                 d => d.Label,
                 d => d.Mode switch
                 {
-                    DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential, fallbackScope, logger),
-                    DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http, credential, d, fallbackScope, logger),
+                    DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential!, fallbackScope, logger),
+                    DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http, credential!, d, fallbackScope, logger),
                     DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(d, logger),
                     _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
                 });
