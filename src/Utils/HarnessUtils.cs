@@ -7,8 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using AICopyrightReproducibility.Config;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Utils
 {
     internal static class HarnessUtils
     {

@@ -6,8 +6,12 @@ using System.Threading.Tasks;
 using Azure.Identity;
 using OpenAI;
 using OpenAI.Chat;
+using AICopyrightReproducibility.Config;
+using AICopyrightReproducibility.Executors;
+using AICopyrightReproducibility.Executors.Standard;
+using AICopyrightReproducibility.Utils;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Executors.Azure
 {
     public sealed class AzureModeApi : IDeploymentExecutor
     {

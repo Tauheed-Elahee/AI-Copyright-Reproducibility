@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AICopyrightReproducibility.Config;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Executors
 {
     public interface IDeploymentExecutor
     {

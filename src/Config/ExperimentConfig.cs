@@ -1,4 +1,4 @@
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Config
 {
     public sealed class IterationsConfig
     {

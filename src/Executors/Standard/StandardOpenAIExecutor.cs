@@ -8,8 +8,11 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using OpenAI;
 using OpenAI.Chat;
+using AICopyrightReproducibility.Config;
+using AICopyrightReproducibility.Executors;
+using AICopyrightReproducibility.Utils;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Executors.Standard
 {
     public sealed class StandardOpenAIExecutor : IDeploymentExecutor
     {

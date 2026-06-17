@@ -10,8 +10,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
+using AICopyrightReproducibility.Config;
+using AICopyrightReproducibility.Executors;
+using AICopyrightReproducibility.Utils;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Executors.Azure
 {
     public sealed class AzureAgentApiExecutor : IDeploymentExecutor
     {

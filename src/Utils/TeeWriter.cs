@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Utils
 {
     internal sealed class TeeWriter : TextWriter
     {

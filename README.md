@@ -23,6 +23,11 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 /
 ├── example.project/        template — copy this to start a new study
 ├── src/                    C# source + project file
+│   ├── Config/             config + runtime types
+│   ├── Executors/
+│   │   ├── Azure/          AzureModeApi, AzureAgentApiExecutor
+│   │   └── Standard/       StandardOpenAIExecutor
+│   └── Utils/              HarnessUtils, ScoringUtils, HttpPolicies, TeeWriter
 ├── scripts/
 │   ├── build/              build.sh / build.bat
 │   ├── run/                run.sh   / run.bat

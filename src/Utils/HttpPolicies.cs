@@ -3,7 +3,7 @@ using System.ClientModel.Primitives;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace AICopyrightReproducibility
+namespace AICopyrightReproducibility.Utils
 {
     public sealed class ApiVersionPolicy : PipelinePolicy
     {
