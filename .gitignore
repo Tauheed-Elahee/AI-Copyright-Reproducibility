@@ -1,0 +1,16 @@
+# .NET build artifacts
+build/
+
+# Runtime output
+output/
+log/
+
+# Secrets — never commit
+config/secrets.json
+
+# Internal session docs
+CONTEXT/
+
+# Local tooling
+.claude/
+.omp/

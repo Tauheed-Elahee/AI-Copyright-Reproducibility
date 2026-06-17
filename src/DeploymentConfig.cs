@@ -1,0 +1,55 @@
+using System.Collections.Generic;
+using System.Text.Json;
+
+namespace AICopyrightReproducibility
+{
+    public sealed class UnsupportedParamResponse
+    {
+        public int    Status  { get; set; }
+        public string Content { get; set; } = "";
+    }
+
+    public sealed class UnsupportedParam
+    {
+        public JsonElement?             IntendedValue { get; set; }
+        public string                   ErrorType     { get; set; } = "";   // "response" | "output" | "ignored"
+        public UnsupportedParamResponse Response      { get; set; } = new();
+        public string                   Reason        { get; set; } = "";
+    }
+
+    public enum DeploymentMode { AzureModeApi, AzureAgentApi, StandardOpenAI }
+
+    public sealed class AgentConnectionConfig
+    {
+        public string? Endpoint   { get; set; }
+        public string? Name       { get; set; }
+        public string? Suffix     { get; set; }
+        public string? ApiVersion { get; set; }
+    }
+
+    public sealed class DeploymentConnectionConfig
+    {
+        // AzureModeApi + StandardOpenAI
+        public string? Endpoint           { get; set; }
+        public string? ApiKey             { get; set; }
+
+        // AzureModeApi + AzureAgentApi
+        public string? TokenScope         { get; set; }
+
+        // AzureModeApi
+        public string? Deployment         { get; set; }
+        public string? ApiVersionOverride { get; set; }
+
+        // AzureAgentApi
+        public AgentConnectionConfig? Agent { get; set; }
+    }
+
+    public sealed class DeploymentConfig
+    {
+        public string                               Label                 { get; set; } = "";
+        public DeploymentMode                       Mode                  { get; set; } = DeploymentMode.AzureModeApi;
+        public DeploymentConnectionConfig           Connection            { get; set; } = new();
+        public Dictionary<string, JsonElement>      Parameters            { get; set; } = new();
+        public Dictionary<string, UnsupportedParam> UnsupportedParameters { get; set; } = new();
+    }
+}

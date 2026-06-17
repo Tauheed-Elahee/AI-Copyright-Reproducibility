@@ -1,0 +1,35 @@
+{
+  "experiment": {
+    "iterations": {
+      "set": 1,
+      "rep": 2
+    },
+    "omit_null_fields": true,
+    "output_root": "output",
+    "file": {
+      "queries":     "config/queries.config.json",
+      "texts":       "config/text.db.json",
+      "prompts":     "config/prompts.config.json",
+      "deployments": "config/deployments.config.json"
+    },
+    "timing": {
+      "pause": {
+        "run": {
+          "set":    300,
+          "prompt":   0,
+          "rep":      5,
+          "deployment": 0
+        }
+      }
+    },
+    "seed": {
+      "shuffle": {
+        "run": {
+          "prompt": 99,
+          "deployment": 20
+        },
+        "content": 42
+      }
+    }
+  }
+}

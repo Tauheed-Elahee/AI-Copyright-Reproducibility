@@ -1,0 +1,31 @@
+{
+  "prompts": [
+    {
+      "text": "toronto-notes-2022",
+      "queries": [
+        "title_to_toc",
+        "toc_to_title",
+        "shuffled_toc_to_order",
+        "shuffled_toc_to_title"
+      ]
+    },
+    {
+      "text": "bates-guide-13e",
+      "queries": [
+        "title_to_toc",
+        "toc_to_title_us",
+        "shuffled_toc_to_order_us",
+        "shuffled_toc_to_title_us"
+      ]
+    },
+    {
+      "text": "bates-guide-13e-ch11",
+      "queries": [
+        "title_to_sections",
+        "sections_to_title_us",
+        "shuffled_sections_to_order_us",
+        "shuffled_sections_to_title_us"
+      ]
+    }
+  ]
+}
