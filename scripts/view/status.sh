@@ -1,8 +1,16 @@
 #!/bin/bash
-# Usage: watch -n 2 -c bash ./status.sh
+# Usage: status.sh <project-dir>
+#        watch -n 2 -c bash ./scripts/view/status.sh <project-dir>
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-OUTPUT=${HARNESS_LOG:-$(ls -t "$SCRIPT_DIR/log"/harness-*.log 2>/dev/null | head -1)}
+if [ -z "$1" ]; then
+    echo "Usage: status.sh <project-dir>" >&2
+    exit 1
+fi
+
+PROJECT="$1"
+LOG_DIR="$PROJECT/log"
+
+OUTPUT=${HARNESS_LOG:-$(ls -t "$LOG_DIR"/harness-*.log 2>/dev/null | head -1)}
 
 BOLD='\033[1m'
 CYAN='\033[1;36m'
@@ -18,7 +26,7 @@ printf "${CYAN}╚════════════════════�
 printf "${DIM}Updated: $(date '+%H:%M:%S')${RESET}\n\n"
 
 if [ -z "$OUTPUT" ] || [ ! -f "$OUTPUT" ]; then
-    printf "  ${DIM}Waiting for log file in %s/log/ ...${RESET}\n" "$SCRIPT_DIR"
+    printf "  ${DIM}Waiting for log file in %s ...${RESET}\n" "$LOG_DIR"
     exit 0
 fi
 
