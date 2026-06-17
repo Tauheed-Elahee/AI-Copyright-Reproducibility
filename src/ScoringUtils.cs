@@ -72,11 +72,14 @@ namespace AICopyrightReproducibility
                 !string.IsNullOrEmpty(tbShort))
                 rec.TextbookHit = rec.ContentText.Contains(tbShort, StringComparison.OrdinalIgnoreCase);
 
-            string canonical = string.Join("\n",
-                new[] { rec.TitleHit ? "1" : "0", rec.TextbookHit ? "1" : "0" }.Concat(rec.Lists));
-            string sh = HarnessUtils.Sha256Hex(canonical);
-            rec.SemanticSha256      = sh;
-            rec.SemanticSha256Short = sh[..12];
+            if (rec.Status == 200)
+            {
+                string canonical = string.Join("\n",
+                    new[] { rec.TitleHit ? "1" : "0", rec.TextbookHit ? "1" : "0" }.Concat(rec.Lists));
+                string sh = HarnessUtils.Sha256Hex(canonical);
+                rec.SemanticSha256      = sh;
+                rec.SemanticSha256Short = sh[..12];
+            }
         }
 
         private static string Norm(string s) => s.Trim().ToLowerInvariant();
