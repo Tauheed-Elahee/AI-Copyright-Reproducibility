@@ -1,7 +1,23 @@
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using NuGet.Versioning;
 
 namespace AICopyrightReproducibility.Config
 {
+    public sealed class SemanticVersionJsonConverter : JsonConverter<SemanticVersion>
+    {
+        public override SemanticVersion? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? s = reader.GetString();
+            return s is null ? null : SemanticVersion.Parse(s);
+        }
+
+        public override void Write(Utf8JsonWriter writer, SemanticVersion value, JsonSerializerOptions options)
+            => writer.WriteStringValue(value.ToNormalizedString());
+    }
+
+
     public sealed class IterationsConfig
     {
         public int Set { get; set; } = 1;
@@ -86,18 +102,11 @@ namespace AICopyrightReproducibility.Config
         public LocationConfig Log    { get; set; } = new() { Dir = "log"    };
     }
 
-    public sealed class HarnessVersion
-    {
-        public int Major { get; set; }
-        public int Minor { get; set; }
-        public int Patch { get; set; }
-    }
-
     public sealed class VersionConfig
     {
-        public HarnessVersion? Created    { get; set; }
-        public HarnessVersion? Compatible { get; set; }
-        public HarnessVersion? LastRun    { get; set; }
+        public SemanticVersion? Created    { get; set; }
+        public SemanticVersion? Compatible { get; set; }
+        public SemanticVersion? LastRun    { get; set; }
     }
 
     public sealed class EditionConfig

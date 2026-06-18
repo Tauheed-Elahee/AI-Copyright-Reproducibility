@@ -15,6 +15,7 @@ using AICopyrightReproducibility.Executors;
 using AICopyrightReproducibility.Executors.Azure;
 using AICopyrightReproducibility.Executors.Standard;
 using AICopyrightReproducibility.Utils;
+using NuGet.Versioning;
 
 namespace AICopyrightReproducibility
 {
@@ -156,7 +157,11 @@ namespace AICopyrightReproducibility
             {
                 PropertyNamingPolicy        = JsonNamingPolicy.SnakeCaseLower,
                 PropertyNameCaseInsensitive = true,
-                Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+                Converters =
+                {
+                    new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+                    new SemanticVersionJsonConverter()
+                }
             };
             string configDir = projectDir;
             string stamp     = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
@@ -203,12 +208,11 @@ namespace AICopyrightReproducibility
                                              Logger.Level.Info, sysLogWriter);
             logger.Info($"Loaded config : {configPath}");
 
-            HarnessVersion harnessVersion = GetHarnessVersion();
+            SemanticVersion harnessVersion = GetHarnessVersion();
             if (cfg.Project.Version?.Compatible is { } compat
-                && CompareVersions(harnessVersion, compat) < 0)
+                && harnessVersion.CompareTo(compat) < 0)
             {
-                logger.Warn($"Project requires harness >= {compat.Major}.{compat.Minor}.{compat.Patch}; " +
-                            $"running with {harnessVersion.Major}.{harnessVersion.Minor}.{harnessVersion.Patch}.");
+                logger.Warn($"Project requires harness >= {compat}; running with {harnessVersion}.");
             }
 
             static string AbsPath(string dir, string file) =>
@@ -400,7 +404,11 @@ namespace AICopyrightReproducibility
                     WriteIndented          = true,
                     PropertyNamingPolicy   = JsonNamingPolicy.SnakeCaseLower,
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                    Converters             = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+                    Converters =
+                    {
+                        new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+                        new SemanticVersionJsonConverter()
+                    }
                 };
                 File.WriteAllText(configPath,
                     JsonSerializer.Serialize(new { project = cfg.Project }, writeBackOpts));
@@ -468,7 +476,7 @@ namespace AICopyrightReproducibility
             string projectName = destination.Name.EndsWith(".project", StringComparison.OrdinalIgnoreCase)
                 ? destination.Name[..^".project".Length]
                 : destination.Name;
-            HarnessVersion harnessVersion = GetHarnessVersion();
+            SemanticVersion harnessVersion = GetHarnessVersion();
 
             var projectManifest = new
             {
@@ -494,7 +502,11 @@ namespace AICopyrightReproducibility
                 WriteIndented          = true,
                 PropertyNamingPolicy   = JsonNamingPolicy.SnakeCaseLower,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                Converters             = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+                Converters =
+                {
+                    new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+                    new SemanticVersionJsonConverter()
+                }
             };
             File.WriteAllText(Path.Combine(destination.FullName, "project.json"),
                 JsonSerializer.Serialize(projectManifest, createOpts));
@@ -634,19 +646,12 @@ namespace AICopyrightReproducibility
             }
             """;
 
-        private static HarnessVersion GetHarnessVersion()
+        private static SemanticVersion GetHarnessVersion()
         {
             var v = Assembly.GetExecutingAssembly().GetName().Version;
             return v != null
-                ? new HarnessVersion { Major = v.Major, Minor = v.Minor, Patch = v.Build }
-                : new HarnessVersion();
-        }
-
-        private static int CompareVersions(HarnessVersion a, HarnessVersion b)
-        {
-            if (a.Major != b.Major) return a.Major.CompareTo(b.Major);
-            if (a.Minor != b.Minor) return a.Minor.CompareTo(b.Minor);
-            return a.Patch.CompareTo(b.Patch);
+                ? new SemanticVersion(v.Major, v.Minor, v.Build)
+                : new SemanticVersion(0, 0, 0);
         }
 
         private static void FlattenJson(JsonElement element, string prefix, Dictionary<string, string> result)

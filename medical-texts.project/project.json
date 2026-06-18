@@ -4,8 +4,8 @@
     "author": "Tauheed Elahee",
     "date": "2026-06-18",
     "version": {
-      "created":    { "major": 1, "minor": 0, "patch": 0 },
-      "compatible": { "major": 1, "minor": 0, "patch": 0 },
+      "created":    "1.0.0",
+      "compatible": "1.0.0",
       "last_run":   null
     },
     "location": "/home/thegreat/Documents/Mortigen/AI_Building/Annex/AI-Copyright-Reproducibility/medical-texts.project",
