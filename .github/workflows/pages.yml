@@ -51,7 +51,7 @@ jobs:
           destination: ./_site
 
       - name: Merge viewer into site
-        run: mkdir -p _site/viewer && cp -r dist/viewer/wwwroot/. _site/viewer/
+        run: sudo mkdir -p _site/viewer && sudo cp -r dist/viewer/wwwroot/. _site/viewer/
 
       - uses: actions/upload-pages-artifact@v3
 
