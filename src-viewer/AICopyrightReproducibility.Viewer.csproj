@@ -12,8 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../src-core/AICopyrightReproducibility.Core.csproj"
-                      Private="false" ExcludeAssets="native" />
+    <ProjectReference Include="../src-core/AICopyrightReproducibility.Core.csproj" />
   </ItemGroup>
 
 </Project>
