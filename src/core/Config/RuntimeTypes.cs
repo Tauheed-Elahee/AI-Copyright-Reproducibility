@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace AICopyrightReproducibility.Config
@@ -40,6 +41,34 @@ namespace AICopyrightReproducibility.Config
         public ExperimentConfig       Experiment  { get; set; } = new();
         public List<QueryConfig>      Queries     { get; set; } = new();
         public List<DeploymentConfig> Deployments { get; set; } = new();
+    }
+
+    public sealed class ProjectSnapshot
+    {
+        public string? Name   { get; set; }
+        public string? Author { get; set; }
+        public string? Date   { get; set; }
+    }
+
+    public sealed class DeploymentSnapshot
+    {
+        public string                          Label      { get; set; } = "";
+        public DeploymentMode                  Mode       { get; set; }
+        public string                          Url        { get; set; } = "";
+        public string                          AuthType   { get; set; } = "";
+        public string?                         TokenScope { get; set; }
+        public string                          AuthHeader { get; set; } = "Authorization";
+        public string?                         AuthScheme { get; set; }
+        public Dictionary<string, JsonElement> Parameters { get; set; } = new();
+    }
+
+    public sealed class RunSnapshot
+    {
+        public string                   CapturedUtc { get; set; } = "";
+        public ProjectSnapshot?         Project     { get; set; }
+        public ExperimentConfig         Experiment  { get; set; } = new();
+        public List<QueryConfig>        Queries     { get; set; } = new();
+        public List<DeploymentSnapshot> Deployments { get; set; } = new();
     }
 
     public sealed class RunRecord

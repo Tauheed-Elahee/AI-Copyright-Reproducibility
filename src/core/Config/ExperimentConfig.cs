@@ -110,7 +110,6 @@ namespace AICopyrightReproducibility.Config
         public RetryConfig      Retry          { get; set; } = new();
         public TimingConfig     Timing         { get; set; } = new();
         public SeedConfig       Seed           { get; set; } = new();
-        public string?          CapturedUtc    { get; set; }
         public string           LogLevel       { get; set; } = "info";
     }
 }

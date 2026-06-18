@@ -294,7 +294,6 @@ namespace AICopyrightReproducibility
 
                 string outDir = Path.Combine(configDir, cfg.Project.Fs.Output.Dir, stamp);
                 Directory.CreateDirectory(outDir);
-                OutputWriter.WriteRunConfig(cfg, outDir);
 
                 string endpointsPath = Path.Combine(configLocDir, "endpoints.json");
                 EndpointsConfig endpointsCfg = File.Exists(endpointsPath)
@@ -317,11 +316,13 @@ namespace AICopyrightReproducibility
                 bool needsHttpClient = cfg.Deployments.Any(d => d.Mode is DeploymentMode.AzureAgentApi);
                 using HttpClient? http = needsHttpClient ? new HttpClient() : null;
 
+                var resolvedConnections = new Dictionary<string, ResolvedConnectionConfig>();
                 Dictionary<string, IDeploymentExecutor> executors = cfg.Deployments.ToDictionary(
                     d => d.Label,
                     d =>
                     {
                         ResolvedConnectionConfig r = HarnessUtils.ResolveConnection(d.Connection, endpointsCfg, secretsCfg, d.Label);
+                        resolvedConnections[d.Label] = r;
                         return d.Mode switch
                         {
                             DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(r, credential!, logger),
@@ -330,6 +331,34 @@ namespace AICopyrightReproducibility
                             _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
                         };
                     });
+
+                OutputWriter.WriteRunConfig(new RunSnapshot
+                {
+                    CapturedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    Project     = new ProjectSnapshot
+                    {
+                        Name   = cfg.Project.Name,
+                        Author = cfg.Project.Author,
+                        Date   = cfg.Project.Date
+                    },
+                    Experiment  = cfg.Experiment,
+                    Queries     = cfg.Queries,
+                    Deployments = cfg.Deployments.Select(d =>
+                    {
+                        ResolvedConnectionConfig r = resolvedConnections[d.Label];
+                        return new DeploymentSnapshot
+                        {
+                            Label      = d.Label,
+                            Mode       = d.Mode,
+                            Url        = r.Url,
+                            AuthType   = r.AuthType,
+                            TokenScope = r.TokenScope,
+                            AuthHeader = r.AuthHeader,
+                            AuthScheme = r.AuthScheme,
+                            Parameters = d.Parameters
+                        };
+                    }).ToList()
+                }, outDir);
 
                 logger.Info($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
                 logger.Info($"Bound prompts: {boundPrompts.Count} ({string.Join(", ", boundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");

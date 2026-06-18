@@ -32,17 +32,16 @@ namespace AICopyrightReproducibility
              rs.Where(r => r.ListLogprobMedian.HasValue).Select(r => r.ListLogprobMedian!.Value).ToList(),
              rs.Where(r => r.TitleLogprob.HasValue)     .Select(r => r.TitleLogprob!.Value).ToList());
 
-        public static void WriteRunConfig(RunConfig cfg, string outDir)
+        public static void WriteRunConfig(RunSnapshot snapshot, string outDir)
         {
-            cfg.Experiment.CapturedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             JsonSerializerOptions writeOpts = new JsonSerializerOptions
             {
                 WriteIndented        = true,
                 PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-                Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+                Converters           = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
             };
             File.WriteAllText(Path.Combine(outDir, "run-config.json"),
-                JsonSerializer.Serialize(cfg, writeOpts));
+                JsonSerializer.Serialize(snapshot, writeOpts));
         }
 
         public static void WriteManifestCsv(List<RunRecord> records, string path)
