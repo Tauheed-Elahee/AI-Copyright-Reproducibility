@@ -45,6 +45,7 @@ namespace AICopyrightReproducibility
 
                 statsLogger.Info($"Loaded {statsRecords.Count} records from: {manifestPath}");
 
+                OutputWriter.WriteManifestCsv(statsRecords, Path.Combine(runDir, "manifest.csv"));
                 OutputWriter.WriteIdentityGroups(statsRecords, statsLogger);
                 if (statsRecords.Any(r => r.SectionCount > 0))
                 {

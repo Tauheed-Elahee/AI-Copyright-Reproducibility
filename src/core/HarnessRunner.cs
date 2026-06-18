@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +51,7 @@ namespace AICopyrightReproducibility
             _logger          = logger;
             _progress        = progress;
             _total           = _iterations.Set * boundPrompts.Count * _iterations.Rep * cfg.Deployments.Count;
+            Directory.CreateDirectory(Path.Combine(outDir, HarnessUtils.RawRunsDir));
             bool anyParallel = _par.Level.Deployment || _par.Level.Rep || _par.Level.Prompt;
             int  cap         = _par.MaxConcurrency > 0 ? _par.MaxConcurrency : int.MaxValue;
             _sem = anyParallel ? new SemaphoreSlim(cap, cap) : null;

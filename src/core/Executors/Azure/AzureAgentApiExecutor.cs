@@ -53,7 +53,7 @@ namespace AICopyrightReproducibility.Executors.Azure
 
             string requestJson = JsonSerializer.Serialize(
                 HarnessUtils.BuildRequestBody("input", prompt, parameters, omitNullFields));
-            rec.RawFile = rawFileName;
+            rec.RawFile = Path.Combine(HarnessUtils.RawRunsDir, rawFileName);
 
             Stopwatch sw = Stopwatch.StartNew();
             string responseJson = "";
@@ -106,7 +106,7 @@ namespace AICopyrightReproducibility.Executors.Azure
             }
             rec.DurationMs = sw.ElapsedMilliseconds;
 
-            await File.WriteAllTextAsync(Path.Combine(outDir, rawFileName), responseJson).ConfigureAwait(false);
+            await File.WriteAllTextAsync(Path.Combine(outDir, HarnessUtils.RawRunsDir, rawFileName), responseJson).ConfigureAwait(false);
             rec.RawJson = responseJson;
 
             try

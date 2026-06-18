@@ -57,7 +57,7 @@ namespace AICopyrightReproducibility.Executors.Standard
             Dictionary<string, object?> body = HarnessUtils.BuildRequestBody("messages", prompt, parameters, omitNullFields);
             if (_injectModel is not null) body["model"] = _injectModel;
             string requestJson = JsonSerializer.Serialize(body);
-            rec.RawFile = rawFileName;
+            rec.RawFile = Path.Combine(HarnessUtils.RawRunsDir, rawFileName);
 
             Stopwatch sw = Stopwatch.StartNew();
             string responseJson;
@@ -114,7 +114,7 @@ namespace AICopyrightReproducibility.Executors.Standard
             }
             rec.DurationMs = sw.ElapsedMilliseconds;
 
-            await File.WriteAllTextAsync(Path.Combine(outDir, rawFileName), responseJson).ConfigureAwait(false);
+            await File.WriteAllTextAsync(Path.Combine(outDir, HarnessUtils.RawRunsDir, rawFileName), responseJson).ConfigureAwait(false);
             rec.RawJson = responseJson;
 
             try

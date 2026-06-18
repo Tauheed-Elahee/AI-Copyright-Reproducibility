@@ -13,6 +13,8 @@ namespace AICopyrightReproducibility.Utils
 {
     public static class HarnessUtils
     {
+        public const string RawRunsDir = "runs";
+
         public static string Sha256Hex(string s)
         {
             byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(s));
