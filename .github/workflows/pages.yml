@@ -43,8 +43,6 @@ jobs:
       - name: Build results viewer
         run: dotnet publish src-viewer/ -c Release -o dist/viewer/
 
-      - uses: actions/configure-pages@v5
-
       - uses: actions/jekyll-build-pages@v1
         with:
           source: ./docs
@@ -52,6 +50,11 @@ jobs:
 
       - name: Merge viewer into site
         run: sudo mkdir -p _site/viewer && sudo cp -r dist/viewer/wwwroot/. _site/viewer/
+
+      - name: Disable Jekyll processing on artifact
+        run: sudo touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
 
