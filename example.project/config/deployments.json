@@ -4,11 +4,11 @@
       "label": "example-deployment",
       "mode": "StandardOpenAI",
       "connection": {
-        "endpoint": "https://api.openai.com",
-        "api_key": "${openai_api_key}"
+        "endpoint": "${example}",
+        "api_key": "${example}"
       },
       "parameters": {
-        "model": "gpt-4o-mini",
+        "model": "example-model",
         "temperature": 0.0,
         "max_completion_tokens": 1024,
         "stream": false

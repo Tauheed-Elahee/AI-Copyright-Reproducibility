@@ -4,7 +4,7 @@
       "label": "deepseek-model",
       "mode": "AzureModeApi",
       "connection": {
-        "endpoint": "${azure_model_endpoint}",
+        "endpoint": "${azure_model}",
         "token_scope": "https://ai.azure.com/.default",
         "deployment": "DeepSeek-V4-Pro"
       },
@@ -214,7 +214,7 @@
       "mode": "StandardOpenAI",
       "connection": {
         "endpoint": "https://api.deepseek.com",
-        "api_key": "${deepseek_api_key}"
+        "api_key": "${deepseek}"
       },
       "parameters": {
         "model": "deepseek-v4-pro",
@@ -253,7 +253,7 @@
       "mode": "StandardOpenAI",
       "connection": {
         "endpoint": "https://api.deepseek.com",
-        "api_key": "${deepseek_api_key}"
+        "api_key": "${deepseek}"
       },
       "parameters": {
         "model": "deepseek-v4-pro",
@@ -291,7 +291,7 @@
       "label": "gpt-oss-model",
       "mode": "AzureModeApi",
       "connection": {
-        "endpoint": "${azure_model_endpoint}",
+        "endpoint": "${azure_model}",
         "token_scope": "https://ai.azure.com/.default",
         "deployment": "gpt-oss-120b"
       },

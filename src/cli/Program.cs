@@ -289,10 +289,11 @@ namespace AICopyrightReproducibility
                 OutputWriter.WriteRunConfig(cfg, outDir);
 
                 string secretsPath = Path.Combine(configLocDir, "secrets.json");
-                Dictionary<string, string> secrets = File.Exists(secretsPath)
-                    ? JsonSerializer.Deserialize<Dictionary<string, string>>(
+                SecretsConfig secretsCfg = File.Exists(secretsPath)
+                    ? JsonSerializer.Deserialize<SecretsConfig>(
                           File.ReadAllText(secretsPath), readOpts) ?? new()
                     : new();
+                Dictionary<string, string> secrets = secretsCfg.Flatten();
                 HarnessUtils.ResolveSecrets(cfg, secrets);
                 logger.Info($"Loaded secrets: {secretsPath}");
 
@@ -484,10 +485,16 @@ namespace AICopyrightReproducibility
         private const string TemplateSecretsJson =
             """
             {
-              "azure_model_endpoint": "",
-              "azure_agent_base": "",
-              "deepseek_api_key": "",
-              "openai_api_key": ""
+              "api": {
+                "endpoints": {
+                  "azure_model": "",
+                  "azure_agent_base": ""
+                },
+                "keys": {
+                  "deepseek": "",
+                  "openai": ""
+                }
+              }
             }
             """;
 
