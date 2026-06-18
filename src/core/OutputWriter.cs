@@ -214,7 +214,7 @@ namespace AICopyrightReproducibility
         public static void WriteSummaryPctCsv(List<RunRecord> records, string path)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("text_label,query_label,deployment,n,n_ok,n_err,n_ok%,n_err%," +
+            sb.AppendLine("text_label,query_label,deployment,n,n_ok,n_err,n_ok%,n_err%,perf_pct," +
                           "coverage_pct,li1_first_pct,order_pct_mean,title_hit_pct,textbook_hit_pct," +
                           "list_logprob_geomean_pct,list_logprob_arith_pct," +
                           "list_logprob_median_geomean_pct,list_logprob_median_arith_pct," +
@@ -254,13 +254,18 @@ namespace AICopyrightReproducibility
 
                 string nOkPct  = rs.Count > 0 ? (nOk  * 100.0 / rs.Count).ToString("F1", CultureInfo.InvariantCulture) : "";
                 string nErrPct = rs.Count > 0 ? (nErr * 100.0 / rs.Count).ToString("F1", CultureInfo.InvariantCulture) : "";
+                int    perfCount = ok.Count(r =>
+                    (!isList  || (r.Coverage == r.SectionCount && r.Hallucinations == 0)) &&
+                    (!isOrder || r.MinMoves == 0) &&
+                    (isList   || r.TitleHit));
+                string perfPct = nOk > 0 ? (perfCount * 100.0 / nOk).ToString("F1", CultureInfo.InvariantCulture) : "";
                 sb.AppendLine(string.Join(",", new[]
                 {
                     Csv(g.Key.TextLabel), Csv(g.Key.QueryLabel), Csv(g.Key.Deployment),
                     rs.Count.ToString(CultureInfo.InvariantCulture),
                     nOk.ToString(CultureInfo.InvariantCulture),
                     nErr.ToString(CultureInfo.InvariantCulture),
-                    nOkPct, nErrPct,
+                    nOkPct, nErrPct, perfPct,
                     covPct, li1Pct, orderPct, titlePct, tbPct,
                     lpmGeo, lpmArith, lpmMedGeo, lpmMedArith,
                     tlpGeo, tlpArith

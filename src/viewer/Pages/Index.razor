@@ -47,14 +47,138 @@ else if (_records != null)
         }
     </section>
 
+    <div class="tabs">
+        <button class="tab-btn @(_activeTab == "summary"    ? "active" : "")"
+                @onclick='() => _activeTab = "summary"'>Summary</button>
+        <button class="tab-btn @(_activeTab == "deployment" ? "active" : "")"
+                @onclick='() => _activeTab = "deployment"'>By Deployment</button>
+    </div>
+
+    @if (_activeTab == "summary")
+    {
     <section>
-        <h2>Per-Deployment Summary</h2>
+        <h2>Summary &mdash; Counts</h2>
+        <div style="overflow-x: auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Text</th>
+                    <th>Query</th>
+                    <th>Deployment</th>
+                    <th class="num">n</th>
+                    <th class="num">n_ok</th>
+                    <th class="num">n_err</th>
+                    <th class="num">exact</th>
+                    <th class="num">coverage</th>
+                    <th class="num">halluc</th>
+                    <th class="num">li1</th>
+                    <th class="num">pos_score</th>
+                    <th class="num">min_moves</th>
+                    <th class="num">title_hit</th>
+                    <th class="num">tb_hit</th>
+                    <th class="num">lp_mean</th>
+                    <th class="num">lp_med</th>
+                    <th class="num">tlp_mean</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in _summaryRows)
+                {
+                    <tr>
+                        <td class="mono small">@r.TextLabel</td>
+                        <td class="mono small">@r.QueryLabel</td>
+                        <td class="mono small">@r.Deployment</td>
+                        <td class="num">@r.N</td>
+                        <td class="num">@r.NOk</td>
+                        <td class="num @(r.NErr > 0 ? "cell-error" : "")">@r.NErr</td>
+                        <td class="num">@r.Exact</td>
+                        <td class="num">@r.Cov</td>
+                        <td class="num">@r.Halluc</td>
+                        <td class="num">@r.Li1Cnt</td>
+                        <td class="num">@r.PosScore</td>
+                        <td class="num">@r.MinMoves</td>
+                        <td class="num">@r.TitleCnt</td>
+                        <td class="num">@r.TbCnt</td>
+                        <td class="num">@r.LpMean</td>
+                        <td class="num">@r.LpMed</td>
+                        <td class="num">@r.TlpMean</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>Summary &mdash; Percentages</h2>
+        <div style="overflow-x: auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Text</th>
+                    <th>Query</th>
+                    <th>Deployment</th>
+                    <th class="num">n</th>
+                    <th class="num">n_ok</th>
+                    <th class="num">n_err</th>
+                    <th class="num">n_ok%</th>
+                    <th class="num">n_err%</th>
+                    <th class="num">perf%</th>
+                    <th class="num">cov%</th>
+                    <th class="num">li1%</th>
+                    <th class="num">ord%</th>
+                    <th class="num">title%</th>
+                    <th class="num">tb%</th>
+                    <th class="num">lp_geo%</th>
+                    <th class="num">lp_ari%</th>
+                    <th class="num">lp_med_geo%</th>
+                    <th class="num">lp_med_ari%</th>
+                    <th class="num">tlp_geo%</th>
+                    <th class="num">tlp_ari%</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in _summaryRows)
+                {
+                    <tr>
+                        <td class="mono small">@r.TextLabel</td>
+                        <td class="mono small">@r.QueryLabel</td>
+                        <td class="mono small">@r.Deployment</td>
+                        <td class="num">@r.N</td>
+                        <td class="num">@r.NOk</td>
+                        <td class="num @(r.NErr > 0 ? "cell-error" : "")">@r.NErr</td>
+                        <td class="num">@r.NOkPct</td>
+                        <td class="num">@r.NErrPct</td>
+                        <td class="num">@r.PerfPct</td>
+                        <td class="num">@r.CovPct</td>
+                        <td class="num">@r.Li1Pct</td>
+                        <td class="num">@r.OrdPct</td>
+                        <td class="num">@r.TitlePct</td>
+                        <td class="num">@r.TbPct</td>
+                        <td class="num">@r.LpmGeo</td>
+                        <td class="num">@r.LpmAri</td>
+                        <td class="num">@r.LpmMedGeo</td>
+                        <td class="num">@r.LpmMedAri</td>
+                        <td class="num">@r.TlpGeo</td>
+                        <td class="num">@r.TlpAri</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    </section>
+    }
+    else
+    {
+    <section>
+        <h2>By Deployment &mdash; Counts</h2>
         <table>
             <thead>
                 <tr>
                     <th>Deployment</th>
                     <th class="num">Calls</th>
                     <th class="num">OK</th>
+                    <th class="num">Perfect</th>
                     <th class="num">Errors</th>
                     <th class="num">Avg ms</th>
                     <th class="num">Avg tokens</th>
@@ -67,6 +191,7 @@ else if (_records != null)
                         <td class="mono">@d.Deployment</td>
                         <td class="num">@d.Total</td>
                         <td class="num">@d.Success</td>
+                        <td class="num">@d.Perfect</td>
                         <td class="num @(d.Errors > 0 ? "cell-error" : "")">@d.Errors</td>
                         <td class="num">@d.AvgMs</td>
                         <td class="num">@d.AvgTokens</td>
@@ -75,6 +200,35 @@ else if (_records != null)
             </tbody>
         </table>
     </section>
+
+    <section>
+        <h2>By Deployment &mdash; Percentages</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Deployment</th>
+                    <th class="num">OK%</th>
+                    <th class="num">Perfect%</th>
+                    <th class="num">Error%</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in _deploymentStats)
+                {
+                    string okPct      = d.Total   > 0 ? (d.Success * 100.0 / d.Total).ToString("F1")   + "%" : "—";
+                    string perfectPct = d.Success > 0 ? (d.Perfect * 100.0 / d.Success).ToString("F1") + "%" : "—";
+                    string errorPct   = d.Total   > 0 ? (d.Errors  * 100.0 / d.Total).ToString("F1")   + "%" : "—";
+                    <tr>
+                        <td class="mono">@d.Deployment</td>
+                        <td class="num">@okPct</td>
+                        <td class="num">@perfectPct</td>
+                        <td class="num @(d.Errors > 0 ? "cell-error" : "")">@errorPct</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+    }
 
     <section>
         <h2>Identity Groups</h2>
@@ -122,7 +276,9 @@ else if (_records != null)
     private int              _successCount;
     private int              _errorCount;
 
+    private List<SummaryRow>     _summaryRows        = new();
     private List<DeploymentStat> _deploymentStats    = new();
+    private string               _activeTab          = "summary";
     private List<IdentityGroup>  _identityGroups     = new();
     private List<IdentityGroup>  _allIdentityGroups  = new();
     private int                  _totalGroups;
@@ -133,8 +289,21 @@ else if (_records != null)
         new() { PropertyNameCaseInsensitive = true };
 
     private record DeploymentStat(
-        string Deployment, int Total, int Success, int Errors,
+        string Deployment, int Total, int Success, int Perfect, int Errors,
         long AvgMs, string AvgTokens);
+
+    private record SummaryRow(
+        string TextLabel, string QueryLabel, string Deployment,
+        int N, int NOk, int NErr,
+        // counts
+        string Exact, string Cov, string Halluc, string Li1Cnt,
+        string PosScore, string MinMoves, string TitleCnt, string TbCnt,
+        string LpMean, string LpMed, string TlpMean,
+        // percentages
+        string NOkPct, string NErrPct, string PerfPct,
+        string CovPct, string Li1Pct, string OrdPct, string TitlePct, string TbPct,
+        string LpmGeo, string LpmAri, string LpmMedGeo, string LpmMedAri,
+        string TlpGeo, string TlpAri);
 
     private record IdentityGroup(
         string Hash, int Count, List<string> Deployments, string Label);
@@ -194,25 +363,93 @@ else if (_records != null)
         _successCount = records.Count(r => r.Status == 200);
         _errorCount   = records.Count(r => r.Error != null || r.Status != 200);
 
+        _summaryRows = records
+            .GroupBy(r => (r.TextLabel, r.QueryLabel, r.Deployment))
+            .OrderBy(g => g.Key.TextLabel)
+            .ThenBy(g => g.Key.QueryLabel)
+            .ThenBy(g => g.Key.Deployment)
+            .Select(g =>
+            {
+                var rs     = g.ToList();
+                var ok     = rs.Where(r => r.Status == 200).ToList();
+                int nOk    = ok.Count;
+                int nErr   = rs.Count - nOk;
+                bool isList  = rs[0].ListTask;
+                bool isOrder = rs[0].OrderTask;
+                int sections = rs[0].SectionCount;
+
+                // counts
+                string exact    = isList  && nOk > 0 ? ok.Average(r => r.ExactMatches).ToString("F1")   : "";
+                string cov      = isList  && nOk > 0 ? ok.Average(r => r.Coverage).ToString("F1")        : "";
+                string halluc   = isList  && nOk > 0 ? ok.Average(r => r.Hallucinations).ToString("F1")  : "";
+                string li1Cnt   = isList  ? ok.Count(r => r.Li1First).ToString()                          : "";
+                string posScore = isOrder && ok.Any(r => r.PositionScore.HasValue)
+                    ? ok.Where(r => r.PositionScore.HasValue).Average(r => r.PositionScore!.Value).ToString("F1") : "";
+                string minMoves = isOrder && ok.Any(r => r.MinMoves.HasValue)
+                    ? ok.Where(r => r.MinMoves.HasValue).Average(r => r.MinMoves!.Value).ToString("F2")   : "";
+                string titleCnt = !isList ? ok.Count(r => r.TitleHit).ToString()    : "";
+                string tbCnt    = !isList ? ok.Count(r => r.TextbookHit).ToString() : "";
+
+                var lpmVals    = ok.Where(r => r.ListLogprobMean.HasValue).Select(r => r.ListLogprobMean!.Value).ToList();
+                var lpmMedVals = ok.Where(r => r.ListLogprobMedian.HasValue).Select(r => r.ListLogprobMedian!.Value).ToList();
+                var tlpVals    = ok.Where(r => r.TitleLogprob.HasValue).Select(r => r.TitleLogprob!.Value).ToList();
+
+                string lpMean  = lpmVals.Count    > 0 ? lpmVals.Average().ToString("F4")    : "";
+                string lpMed   = lpmMedVals.Count > 0 ? lpmMedVals.Average().ToString("F4") : "";
+                string tlpMean = tlpVals.Count    > 0 ? tlpVals.Average().ToString("F4")    : "";
+
+                // percentages
+                string nOkPct  = rs.Count > 0 ? (nOk  * 100.0 / rs.Count).ToString("F1") : "";
+                string nErrPct = rs.Count > 0 ? (nErr * 100.0 / rs.Count).ToString("F1") : "";
+                int perfCount  = ok.Count(r =>
+                    (!r.ListTask  || (r.Coverage == r.SectionCount && r.Hallucinations == 0)) &&
+                    (!r.OrderTask || r.MinMoves == 0) &&
+                    (r.ListTask   || r.TitleHit));
+                string perfPct  = nOk > 0 ? (perfCount * 100.0 / nOk).ToString("F1") : "";
+                string covPct   = isList && sections > 0 && nOk > 0
+                    ? (ok.Average(r => r.Coverage) / sections * 100).ToString("F1") : "";
+                string li1Pct   = isList && nOk > 0
+                    ? (ok.Count(r => r.Li1First) * 100.0 / nOk).ToString("F1") : "";
+                string ordPct   = isOrder && ok.Any(r => r.OrderPct.HasValue)
+                    ? ok.Where(r => r.OrderPct.HasValue).Average(r => r.OrderPct!.Value).ToString("F1") : "";
+                string titlePct = !isList && nOk > 0
+                    ? (ok.Count(r => r.TitleHit)    * 100.0 / nOk).ToString("F1") : "";
+                string tbPct    = !isList && nOk > 0
+                    ? (ok.Count(r => r.TextbookHit) * 100.0 / nOk).ToString("F1") : "";
+
+                string lpmGeo    = lpmVals.Count    > 0 ? (Math.Exp(lpmVals.Average())                      * 100).ToString("F1") : "";
+                string lpmAri    = lpmVals.Count    > 0 ? (lpmVals.Average(v => Math.Exp(v))                * 100).ToString("F1") : "";
+                string lpmMedGeo = lpmMedVals.Count > 0 ? (Math.Exp(lpmMedVals.Average())                   * 100).ToString("F1") : "";
+                string lpmMedAri = lpmMedVals.Count > 0 ? (lpmMedVals.Average(v => Math.Exp(v))             * 100).ToString("F1") : "";
+                string tlpGeo    = tlpVals.Count    > 0 ? (Math.Exp(tlpVals.Average())                      * 100).ToString("F1") : "";
+                string tlpAri    = tlpVals.Count    > 0 ? (tlpVals.Average(v => Math.Exp(v))                * 100).ToString("F1") : "";
+
+                return new SummaryRow(
+                    g.Key.TextLabel, g.Key.QueryLabel, g.Key.Deployment,
+                    rs.Count, nOk, nErr,
+                    exact, cov, halluc, li1Cnt, posScore, minMoves, titleCnt, tbCnt, lpMean, lpMed, tlpMean,
+                    nOkPct, nErrPct, perfPct,
+                    covPct, li1Pct, ordPct, titlePct, tbPct,
+                    lpmGeo, lpmAri, lpmMedGeo, lpmMedAri, tlpGeo, tlpAri);
+            })
+            .ToList();
+
         _deploymentStats = records
             .GroupBy(r => r.Deployment)
             .Select(g =>
             {
-                var ok = g.Where(r => r.Status == 200).ToList();
-                var tokens = ok
-                    .Where(r => r.CompletionTokens.HasValue)
-                    .Select(r => r.CompletionTokens!.Value)
-                    .ToList();
-                string avgTokens = tokens.Count > 0
-                    ? ((int)tokens.Average()).ToString()
-                    : "—";
+                var ok     = g.Where(r => r.Status == 200).ToList();
+                var tokens = ok.Where(r => r.CompletionTokens.HasValue)
+                               .Select(r => r.CompletionTokens!.Value).ToList();
+                int perfCount = ok.Count(r =>
+                    (!r.ListTask  || (r.Coverage == r.SectionCount && r.Hallucinations == 0)) &&
+                    (!r.OrderTask || r.MinMoves == 0) &&
+                    (r.ListTask   || r.TitleHit));
                 return new DeploymentStat(
-                    g.Key,
-                    g.Count(),
-                    ok.Count,
+                    g.Key, g.Count(), ok.Count, perfCount,
                     g.Count(r => r.Error != null || r.Status != 200),
                     ok.Count > 0 ? (long)ok.Average(r => r.DurationMs) : 0,
-                    avgTokens);
+                    tokens.Count > 0 ? ((int)tokens.Average()).ToString() : "—");
             })
             .OrderBy(s => s.Deployment)
             .ToList();
