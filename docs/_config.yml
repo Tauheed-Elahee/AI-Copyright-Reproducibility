@@ -1,7 +1,3 @@
-remote_theme: poole/hyde
-
-plugins:
-  - jekyll-remote-theme
 
 title:       AI-Copyright Reproducibility Harness
 description: A reproducibility harness for LLM deployment testing across Azure AI Foundry and native APIs.

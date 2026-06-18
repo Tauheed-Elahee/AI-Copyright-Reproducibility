@@ -32,6 +32,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -42,6 +44,12 @@ jobs:
 
       - name: Build results viewer
         run: dotnet publish src-viewer/ -c Release -o dist/viewer/
+
+      - name: Apply Hyde theme
+        run: |
+          cp -rn docs/_hyde/_layouts docs/
+          cp -rn docs/_hyde/_includes docs/
+          cp -r docs/_hyde/public docs/
 
       - uses: actions/jekyll-build-pages@v1
         with:
