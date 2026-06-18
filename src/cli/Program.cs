@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.Reflection;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace AICopyrightReproducibility
         {
             var projectDirArg = new Argument<DirectoryInfo?>("project-dir")
             {
-                Description = "Project directory containing config.json. " +
+                Description = "Project directory containing project.json. " +
                               "Defaults to the current directory.",
                 Arity = ArgumentArity.ZeroOrOne
             };
@@ -133,21 +134,21 @@ namespace AICopyrightReproducibility
             {
                 projectDir = projectDirInfo.FullName;
             }
-            else if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "config.json")))
+            else if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "project.json")))
             {
                 projectDir = Directory.GetCurrentDirectory();
             }
             else
             {
                 Console.Error.WriteLine(
-                    "No project-dir given and no config.json found in the current directory.");
+                    "No project-dir given and no project.json found in the current directory.");
                 return 1;
             }
 
-            string configPath = Path.Combine(projectDir, "config.json");
+            string configPath = Path.Combine(projectDir, "project.json");
             if (!File.Exists(configPath))
             {
-                Console.Error.WriteLine($"config.json not found in: {projectDir}");
+                Console.Error.WriteLine($"project.json not found in: {projectDir}");
                 return 1;
             }
 
@@ -168,7 +169,14 @@ namespace AICopyrightReproducibility
                     File.ReadAllText(configPath), readOpts)
                     ?? throw new InvalidOperationException("Failed to deserialise config.");
 
-                string logDir = Path.Combine(configDir, cfg.Locations.Log.Dir);
+                if (cfg.Project.Edition?.ReadOnly == true)
+                {
+                    Console.Error.WriteLine(
+                        $"[ERROR] Project edition is marked read_only. Run aborted: {configPath}");
+                    return 1;
+                }
+
+                string logDir = Path.Combine(configDir, cfg.Project.Fs.Log.Dir);
                 Directory.CreateDirectory(logDir);
                 logWriter = new StreamWriter(
                     Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
@@ -208,9 +216,9 @@ namespace AICopyrightReproducibility
 
             try
             {
-                string configLocDir = Path.Combine(configDir, cfg.Locations.Config.Dir);
+                string configLocDir = Path.Combine(configDir, cfg.Project.Fs.Config.Dir);
 
-                if (cfg.Locations.Config.Files?.Experiment is { } experimentFile)
+                if (cfg.Project.Fs.Config.Files?.Experiment is { } experimentFile)
                 {
                     string p = AbsPath(configLocDir, experimentFile);
                     cfg.Experiment = JsonSerializer.Deserialize<ExperimentConfig>(
@@ -220,10 +228,10 @@ namespace AICopyrightReproducibility
                     logger.Info($"Loaded experiment: {p}");
                 }
 
-                string inputLocDir = Path.Combine(configDir, cfg.Locations.Input.Dir);
+                string inputLocDir = Path.Combine(configDir, cfg.Project.Fs.Input.Dir);
 
                 Dictionary<string, QueryConfig> queriesDict = new();
-                if (cfg.Locations.Input.Files?.Queries is { } queriesFile)
+                if (cfg.Project.Fs.Input.Files?.Queries is { } queriesFile)
                 {
                     string p = AbsPath(inputLocDir, queriesFile);
                     using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -235,7 +243,7 @@ namespace AICopyrightReproducibility
                     logger.Info($"Loaded queries: {p}");
                 }
 
-                if (cfg.Locations.Config.Files?.Deployments is { } deploymentsFile)
+                if (cfg.Project.Fs.Config.Files?.Deployments is { } deploymentsFile)
                 {
                     string p = AbsPath(configLocDir, deploymentsFile);
                     using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -247,7 +255,7 @@ namespace AICopyrightReproducibility
                 }
 
                 var textsDict = new Dictionary<string, TextEntry>(StringComparer.Ordinal);
-                if (cfg.Locations.Input.Files?.Texts is { } textsFile)
+                if (cfg.Project.Fs.Input.Files?.Texts is { } textsFile)
                 {
                     string p = AbsPath(inputLocDir, textsFile);
                     using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -272,7 +280,7 @@ namespace AICopyrightReproducibility
                 }
 
                 List<BoundPrompt> boundPrompts = new();
-                if (cfg.Locations.Input.Files?.Prompts is { } promptsFile)
+                if (cfg.Project.Fs.Input.Files?.Prompts is { } promptsFile)
                 {
                     string p = AbsPath(inputLocDir, promptsFile);
                     using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
@@ -284,7 +292,7 @@ namespace AICopyrightReproducibility
                     logger.Info($"Loaded prompts: {p}");
                 }
 
-                string outDir = Path.Combine(configDir, cfg.Locations.Output.Dir, stamp);
+                string outDir = Path.Combine(configDir, cfg.Project.Fs.Output.Dir, stamp);
                 Directory.CreateDirectory(outDir);
                 OutputWriter.WriteRunConfig(cfg, outDir);
 
@@ -405,7 +413,39 @@ namespace AICopyrightReproducibility
             Directory.CreateDirectory(Path.Combine(destination.FullName, "output"));
             Directory.CreateDirectory(Path.Combine(destination.FullName, "log"));
 
-            File.WriteAllText(Path.Combine(destination.FullName, "config.json"),             TemplateConfigJson);
+            string projectName = destination.Name.EndsWith(".project", StringComparison.OrdinalIgnoreCase)
+                ? destination.Name[..^".project".Length]
+                : destination.Name;
+            string harnessVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
+
+            var projectManifest = new
+            {
+                project = new ProjectConfig
+                {
+                    Name     = projectName,
+                    Author   = "",
+                    Date     = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    Version  = harnessVersion,
+                    Location = destination.FullName,
+                    Edition  = (EditionConfig?)null,
+                    Fs       = new FsConfig
+                    {
+                        Config = new LocationConfig { Dir = "config", Files = new FileConfig { Experiment = "experiment.json", Deployments = "deployments.json" } },
+                        Input  = new LocationConfig { Dir = "input",  Files = new FileConfig { Texts = "text.json", Queries = "queries.json", Prompts = "prompts.json" } },
+                        Output = new LocationConfig { Dir = "output" },
+                        Log    = new LocationConfig { Dir = "log" }
+                    }
+                }
+            };
+            JsonSerializerOptions createOpts = new JsonSerializerOptions
+            {
+                WriteIndented          = true,
+                PropertyNamingPolicy   = JsonNamingPolicy.SnakeCaseLower,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Converters             = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+            };
+            File.WriteAllText(Path.Combine(destination.FullName, "project.json"),
+                JsonSerializer.Serialize(projectManifest, createOpts));
             File.WriteAllText(Path.Combine(destination.FullName, "config", "experiment.json"),     TemplateExperimentJson);
             File.WriteAllText(Path.Combine(destination.FullName, "config", "deployments.json"),    TemplateDeploymentsJson);
             File.WriteAllText(Path.Combine(destination.FullName, "config", "endpoints.template.json"), TemplateEndpointsJson);
@@ -424,31 +464,6 @@ namespace AICopyrightReproducibility
             Console.WriteLine($"  4. harness run \"{destination.FullName}\"");
             return Task.FromResult(0);
         }
-
-        private const string TemplateConfigJson =
-            """
-            {
-              "locations": {
-                "config": {
-                  "dir": "config",
-                  "files": {
-                    "experiment":  "experiment.json",
-                    "deployments": "deployments.json"
-                  }
-                },
-                "input": {
-                  "dir": "input",
-                  "files": {
-                    "texts":   "text.json",
-                    "queries": "queries.json",
-                    "prompts": "prompts.json"
-                  }
-                },
-                "output": { "dir": "output" },
-                "log":    { "dir": "log"    }
-              }
-            }
-            """;
 
         private const string TemplateExperimentJson =
             """

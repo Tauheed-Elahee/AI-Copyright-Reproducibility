@@ -1,0 +1,29 @@
+{
+  "project": {
+    "name": "Medical Texts",
+    "author": "Tauheed Elahee",
+    "date": "2026-06-18T00:00:00Z",
+    "version": "",
+    "location": "",
+    "edition": null,
+    "fs": {
+      "config": {
+        "dir": "config",
+        "files": {
+          "experiment":  "experiment.json",
+          "deployments": "deployments.json"
+        }
+      },
+      "input": {
+        "dir": "input",
+        "files": {
+          "texts":   "text.json",
+          "queries": "queries.json",
+          "prompts": "prompts.json"
+        }
+      },
+      "output": { "dir": "output" },
+      "log":    { "dir": "log"    }
+    }
+  }
+}

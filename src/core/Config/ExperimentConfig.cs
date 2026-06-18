@@ -76,12 +76,30 @@ namespace AICopyrightReproducibility.Config
         public FileConfig? Files { get; set; }
     }
 
-    public sealed class LocationsConfig
+    public sealed class FsConfig
     {
         public LocationConfig Config { get; set; } = new() { Dir = "config" };
         public LocationConfig Input  { get; set; } = new() { Dir = "input"  };
         public LocationConfig Output { get; set; } = new() { Dir = "output" };
         public LocationConfig Log    { get; set; } = new() { Dir = "log"    };
+    }
+
+    public sealed class EditionConfig
+    {
+        public int    Number   { get; set; }
+        public string Date     { get; set; } = "";
+        public bool   ReadOnly { get; set; }
+    }
+
+    public sealed class ProjectConfig
+    {
+        public string?        Name     { get; set; }
+        public string?        Author   { get; set; }
+        public string?        Date     { get; set; }
+        public string?        Version  { get; set; }
+        public string?        Location { get; set; }
+        public EditionConfig? Edition  { get; set; }
+        public FsConfig       Fs       { get; set; } = new();
     }
 
     public sealed class ExperimentConfig

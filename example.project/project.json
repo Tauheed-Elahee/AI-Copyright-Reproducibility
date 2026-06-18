@@ -1,0 +1,29 @@
+{
+  "project": {
+    "name": "Example Project",
+    "author": "",
+    "date": "",
+    "version": "",
+    "location": "",
+    "edition": null,
+    "fs": {
+      "config": {
+        "dir": "config",
+        "files": {
+          "experiment":  "experiment.json",
+          "deployments": "deployments.json"
+        }
+      },
+      "input": {
+        "dir": "input",
+        "files": {
+          "texts":   "text.json",
+          "queries": "queries.json",
+          "prompts": "prompts.json"
+        }
+      },
+      "output": { "dir": "output" },
+      "log":    { "dir": "log"    }
+    }
+  }
+}

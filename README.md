@@ -54,7 +54,7 @@ The harness operates on a **project directory** — a self-contained folder with
 
 ```
 my-study.project/
-├── config.json             location manifest
+├── project.json            project manifest — name, author, date, version, fs layout
 ├── config/
 │   ├── experiment.json          run settings
 │   ├── deployments.json         deployment arms
@@ -82,7 +82,7 @@ my-study.project/
 Edit `config/experiment.json` to set iteration counts, timing, seeds, and parallelism. Set `"log_level"` to one of `verbose`, `info` (default), `warning`, or `error` to control console verbosity.  
 Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
 Edit files in `input/` to change the corpus, query templates, or prompt bindings.  
-Edit `config.json` only to change directory locations.
+Edit `project.json` to update project metadata or change directory locations (`project.fs`).
 
 Two gitignored files must be provided before running — copy from the committed templates and fill in real values:
 
@@ -132,7 +132,7 @@ harness <command> [options]
 ```bash
 harness run my-study.project/        # explicit path
 harness run proj-a/ proj-b/ proj-c/  # multiple projects in sequence
-harness                               # uses current directory if it contains config.json
+harness                               # uses current directory if it contains project.json
 ```
 
 Output lands in `<project-dir>/output/<timestamp>/`.
@@ -241,8 +241,8 @@ files always receive all levels regardless of this setting.
 
 Each line in the system log is prefixed with a UTC timestamp
 (`2026-06-17 14:23:01 Loaded config…`) for cross-run correlation. The system log path is
-derived from the OS user-data directory and is not affected by the `locations.log` setting in
-`config.json`.
+derived from the OS user-data directory and is not affected by the `project.fs.log` setting in
+`project.json`.
 
 ## Query types
 
