@@ -50,7 +50,7 @@ Also download `example.project.tar.gz` to use as a starting template.
 
 ## Project directory
 
-The harness operates on a **project directory** — a self-contained folder with this layout:
+The aicr operates on a **project directory** — a self-contained folder with this layout:
 
 ```
 my-study.project/
@@ -110,29 +110,29 @@ Two gitignored files must be provided before running — copy from the committed
 }
 ```
 
-`endpoints.json` and `secrets.json` travel through different channels: endpoint config is shared with anyone who needs to run the harness; key values go through a secrets manager. Azure-only deployments (using `DefaultAzureCredential`) need no `secrets.json` — there are no key values to supply.
+`endpoints.json` and `secrets.json` travel through different channels: endpoint config is shared with anyone who needs to run the aicr; key values go through a secrets manager. Azure-only deployments (using `DefaultAzureCredential`) need no `secrets.json` — there are no key values to supply.
 
 ## CLI
 
 ```
-harness <command> [options]
+aicr <command> [options]
 ```
 
 | Command | Description |
 |---|---|
-| `harness run <dir>...` | Run an experiment from one or more project directories |
-| `harness create <dir>...` | Create a new project directory with template config files |
-| `harness generate summary [run-dir]` | Regenerate `manifest.csv` and summary CSVs from an existing `manifest.json` |
-| `harness [project-dir]` | Shorthand for `harness run` — uses the current directory if omitted |
-| `harness --help` / `-h` | Show global help |
-| `harness help generate` | Show help for the `generate` subcommand |
+| `aicr run <dir>...` | Run an experiment from one or more project directories |
+| `aicr create <dir>...` | Create a new project directory with template config files |
+| `aicr generate summary [run-dir]` | Regenerate `manifest.csv` and summary CSVs from an existing `manifest.json` |
+| `aicr [project-dir]` | Shorthand for `aicr run` — uses the current directory if omitted |
+| `aicr --help` / `-h` | Show global help |
+| `aicr help generate` | Show help for the `generate` subcommand |
 
 ### Run
 
 ```bash
-harness run my-study.project/        # explicit path
-harness run proj-a/ proj-b/ proj-c/  # multiple projects in sequence
-harness                               # uses current directory if it contains project.json
+aicr run my-study.project/        # explicit path
+aicr run proj-a/ proj-b/ proj-c/  # multiple projects in sequence
+aicr                               # uses current directory if it contains project.json
 ```
 
 Output lands in `<project-dir>/output/<timestamp>/`.
@@ -142,22 +142,22 @@ Output lands in `<project-dir>/output/<timestamp>/`.
 Scaffolds a new project directory with template config files:
 
 ```bash
-harness create my-new-study.project/
+aicr create my-new-study.project/
 ```
 
 Then:
 1. Fill in `config/endpoints.json` with your endpoint URLs (copy from `endpoints.template.json`).
 2. Fill in `config/secrets.json` with your API keys (copy from `secrets.template.json`).
 3. Edit `config/deployments.json`, `input/text.json`, `input/queries.json`.
-4. `harness run my-new-study.project/`
+4. `aicr run my-new-study.project/`
 
 ### Generate summary
 
 Regenerates `manifest.csv`, `summary_counts.csv`, and `summary_pct.csv` from an existing `manifest.json` without re-running the experiment:
 
 ```bash
-harness generate summary my-study.project/output/20260617-120000/
-harness generate summary   # uses current directory
+aicr generate summary my-study.project/output/20260617-120000/
+aicr generate summary   # uses current directory
 ```
 
 ## Prerequisites (Azure)
@@ -179,8 +179,8 @@ Or build a self-contained binary for your platform:
 
 ```bash
 dotnet publish src/cli/ -c Release -r linux-x64 --self-contained \
-  -p:PublishSingleFile=true -p:AssemblyName=harness -o dist/
-./dist/harness run <project-dir>
+  -p:PublishSingleFile=true -p:AssemblyName=aicr -o dist/
+./dist/aicr run <project-dir>
 ```
 
 ## Scripts
@@ -207,7 +207,7 @@ scripts\test\test.bat            # Windows
 
 ### Run
 
-Restores, builds, and runs the harness against the given project directory.
+Restores, builds, and runs `aicr` against the given project directory.
 
 ```bash
 bash scripts/run/run.sh <project-dir>
@@ -216,7 +216,7 @@ scripts\run\run.bat <project-dir>   # Windows
 
 ### Status monitor
 
-Reads the latest log file from `<project-dir>/log/` and prints a live summary: last run line, progress bar, sleep status, identity groups, and error count. Set `HARNESS_LOG` to point at a specific log file instead.
+Reads the latest log file from `<project-dir>/log/` and prints a live summary: last run line, progress bar, sleep status, identity groups, and error count. Set `AICR_LOG` to point at a specific log file instead.
 
 ```bash
 bash scripts/view/status.sh <project-dir>
@@ -230,14 +230,14 @@ watch -n 2 -c bash scripts/view/status.sh <project-dir>
 
 Each run writes to two log files.
 
-**Project log** — `<project-dir>/log/harness-TIMESTAMP.log`  
+**Project log** — `<project-dir>/log/aicr-TIMESTAMP.log`  
 Created fresh for every run. Lines are tagged by level (`[WARN]`, `[ERROR]`, `[VERBOSE]`; info
 lines are untagged). Set `"log_level"` in `experiment.json` to filter console output; both log
 files always receive all levels regardless of this setting.
 
 **System log** — always-on, accumulates across all runs and all projects:
-- Linux / macOS: `~/.local/share/ai-copyright-reproducibility/logs/harness-TIMESTAMP.log`
-- Windows: `%LOCALAPPDATA%\ai-copyright-reproducibility\logs\harness-TIMESTAMP.log`
+- Linux / macOS: `~/.local/share/ai-copyright-reproducibility/logs/aicr-TIMESTAMP.log`
+- Windows: `%LOCALAPPDATA%\ai-copyright-reproducibility\logs\aicr-TIMESTAMP.log`
 
 Each line in the system log is prefixed with a UTC timestamp
 (`2026-06-17 14:23:01 Loaded config…`) for cross-run correlation. The system log path is
@@ -246,7 +246,7 @@ derived from the OS user-data directory and is not affected by the `project.fs.l
 
 ## Query types
 
-Each entry in `config/queries.json` may include a `types` array. Two type strings are recognised by the harness:
+Each entry in `config/queries.json` may include a `types` array. Two type strings are recognised by `aicr`:
 
 | Type string | Effect |
 |---|---|
@@ -275,7 +275,7 @@ dotnet run --project src/viewer/ --pathbase /viewer/
 
 ### Updating the default dataset
 
-After a new harness run, replace the viewer's default manifest with:
+After a new aicr run, replace the viewer's default manifest with:
 
 ```bash
 bash scripts/viewer/update-data.sh <project-dir>/output/<timestamp>/manifest.json

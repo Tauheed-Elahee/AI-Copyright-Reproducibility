@@ -10,7 +10,7 @@ fi
 PROJECT="$1"
 LOG_DIR="$PROJECT/log"
 
-OUTPUT=${HARNESS_LOG:-$(ls -t "$LOG_DIR"/harness-*.log 2>/dev/null | head -1)}
+OUTPUT=${AICR_LOG:-$(ls -t "$LOG_DIR"/aicr-*.log 2>/dev/null | head -1)}
 
 BOLD='\033[1m'
 CYAN='\033[1;36m'

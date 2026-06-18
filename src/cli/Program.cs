@@ -88,6 +88,8 @@ namespace AICopyrightReproducibility
                 lockDestArg
             };
 
+            var versionCommand = new Command("version", "Print the aicr version.");
+
             var rootCommand = new RootCommand(
                 "Run a copyright reproducibility experiment and generate summary statistics.")
             {
@@ -95,7 +97,8 @@ namespace AICopyrightReproducibility
                 generateCommand,
                 runCommand,
                 createCommand,
-                lockCommand
+                lockCommand,
+                versionCommand
             };
 
             rootCommand.SetAction(async (ParseResult pr) =>
@@ -121,6 +124,12 @@ namespace AICopyrightReproducibility
                     int code = await RunCreate(dir);
                     if (code != 0) return code;
                 }
+                return 0;
+            });
+
+            versionCommand.SetAction((ParseResult _) =>
+            {
+                Console.WriteLine($"aicr {GetHarnessVersion()}");
                 return 0;
             });
 
@@ -208,7 +217,7 @@ namespace AICopyrightReproducibility
                 string logDir = Path.Combine(configDir, cfg.Project.Fs.Log.Dir);
                 Directory.CreateDirectory(logDir);
                 logWriter = new StreamWriter(
-                    Path.Combine(logDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+                    Path.Combine(logDir, $"aicr-{stamp}.log"), append: false) { AutoFlush = true };
             }
             catch (Exception ex)
             {
@@ -224,7 +233,7 @@ namespace AICopyrightReproducibility
                     "ai-copyright-reproducibility", "logs");
                 Directory.CreateDirectory(sysLogDir);
                 sysLogWriter = new StreamWriter(
-                    Path.Combine(sysLogDir, $"harness-{stamp}.log"), append: false) { AutoFlush = true };
+                    Path.Combine(sysLogDir, $"aicr-{stamp}.log"), append: false) { AutoFlush = true };
             }
             catch { /* system log unavailable (e.g. read-only environment); continue without it */ }
 
@@ -236,7 +245,7 @@ namespace AICopyrightReproducibility
             if (cfg.Project.Version?.Compatible is { } compat
                 && harnessVersion.CompareTo(compat) < 0)
             {
-                logger.Warn($"Project requires harness >= {compat}; running with {harnessVersion}.");
+                logger.Warn($"Project requires aicr >= {compat}; running with {harnessVersion}.");
             }
 
             static string AbsPath(string dir, string file) =>
@@ -554,7 +563,7 @@ namespace AICopyrightReproducibility
             Console.WriteLine($"  1. Fill in config/endpoints.json with your endpoint URLs.");
             Console.WriteLine($"  2. Fill in config/secrets.json with your API keys.");
             Console.WriteLine($"  3. Edit config/deployments.json, input/text.json, input/queries.json.");
-            Console.WriteLine($"  4. harness run \"{destination.FullName}\"");
+            Console.WriteLine($"  4. aicr run \"{destination.FullName}\"");
             return Task.FromResult(0);
         }
 
