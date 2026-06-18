@@ -21,17 +21,13 @@ namespace AICopyrightReproducibility.Executors.Standard
         private readonly string? _injectModel;
         private readonly Logger _logger;
 
-        public StandardOpenAIExecutor(DeploymentConfig deployment, Logger logger)
+        public StandardOpenAIExecutor(ResolvedConnectionConfig resolved, Dictionary<string, JsonElement> parameters, Logger logger)
         {
-            string endpoint = deployment.Connection.Endpoint
-                ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.endpoint.");
-            string apiKey = deployment.Connection.ApiKey
-                ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.api_key.");
-            string model = deployment.Parameters.TryGetValue("model", out JsonElement mEl)
-                ? (mEl.GetString() ?? "")
-                : "";
+            string apiKey = resolved.ApiKey
+                ?? throw new InvalidOperationException("StandardOpenAI requires an API key in the endpoint's auth config.");
+            string model = parameters.TryGetValue("model", out JsonElement mEl) ? (mEl.GetString() ?? "") : "";
             _client = new ChatClient(model, new ApiKeyCredential(apiKey),
-                new OpenAIClientOptions { Endpoint = new Uri(endpoint) });
+                new OpenAIClientOptions { Endpoint = new Uri(resolved.Url) });
             _logger = logger;
         }
 

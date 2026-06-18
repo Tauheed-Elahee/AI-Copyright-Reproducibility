@@ -18,25 +18,23 @@ namespace AICopyrightReproducibility.Executors.Azure
 {
     public sealed class AzureAgentApiExecutor : IDeploymentExecutor
     {
-        private readonly HttpClient _http;
+        private readonly HttpClient            _http;
         private readonly DefaultAzureCredential _credential;
-        private readonly string _agentEndpoint;
-        private readonly string _agentApiVersion;
-        private readonly string _scope;
-        private readonly Logger _logger;
+        private readonly string                _agentEndpoint;
+        private readonly string                _scope;
+        private readonly string                _authHeader;
+        private readonly string?               _authScheme;
+        private readonly Logger                _logger;
 
-        public AzureAgentApiExecutor(HttpClient http, DefaultAzureCredential credential, DeploymentConfig deployment, string fallbackScope, Logger logger)
+        public AzureAgentApiExecutor(HttpClient http, DefaultAzureCredential credential, ResolvedConnectionConfig resolved, Logger logger)
         {
-            _http = http;
-            _credential = credential;
-            AgentConnectionConfig agent = deployment.Connection.Agent
-                ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.agent.");
-            _agentEndpoint = agent.Endpoint
-                ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.agent.endpoint.");
-            _agentApiVersion = agent.ApiVersion
-                ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.agent.api_version.");
-            _scope  = deployment.Connection.TokenScope ?? fallbackScope;
-            _logger = logger;
+            _http          = http;
+            _credential    = credential;
+            _agentEndpoint = resolved.Url;
+            _scope         = resolved.TokenScope ?? "https://ai.azure.com/.default";
+            _authHeader    = resolved.AuthHeader;
+            _authScheme    = resolved.AuthScheme;
+            _logger        = logger;
         }
 
         public async Task<RunRecord> ExecuteAsync(
@@ -57,9 +55,6 @@ namespace AICopyrightReproducibility.Executors.Azure
 
             Stopwatch sw = Stopwatch.StartNew();
             string responseJson = "";
-            string agentUrl = _agentEndpoint +
-                (_agentEndpoint.Contains('?') ? "&" : "?") +
-                "api-version=" + Uri.EscapeDataString(_agentApiVersion);
             int attempt = 0;
             while (true)
             {
@@ -69,9 +64,11 @@ namespace AICopyrightReproducibility.Executors.Azure
                         new TokenRequestContext(new[] { _scope }),
                         CancellationToken.None).ConfigureAwait(false);
 
-                    using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, agentUrl);
-                    request.Headers.Authorization =
-                        new AuthenticationHeaderValue("Bearer", token.Token);
+                    string tokenValue  = token.Token;
+                    string headerValue = _authScheme is not null ? $"{_authScheme} {tokenValue}" : tokenValue;
+
+                    using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, _agentEndpoint);
+                    request.Headers.TryAddWithoutValidation(_authHeader, headerValue);
                     request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                     using HttpResponseMessage response =

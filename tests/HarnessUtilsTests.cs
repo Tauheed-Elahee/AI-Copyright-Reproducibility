@@ -180,34 +180,70 @@ public class HarnessUtilsTests
             HarnessUtils.BindPrompts(queries, texts, prompts));
     }
 
-    // ── ResolveSecrets ───────────────────────────────────────────────────────
+    // ── ResolveConnection ────────────────────────────────────────────────────
 
     [Fact]
-    public void ResolveSecrets_ReplacesPlaceholder()
+    public void ResolveConnection_ReplacesApiKey()
     {
-        var cfg = MakeRunConfig("${my_key}");
-        HarnessUtils.ResolveSecrets(cfg, new Dictionary<string, string> { ["my_key"] = "sk-abc" });
-        Assert.Equal("sk-abc", cfg.Deployments[0].Connection.ApiKey);
+        var (endpoints, secrets) = MakeConfig("my_endpoint", "https://example.com", "api_key", "my_key", "sk-abc");
+        var connection = new DeploymentConnectionConfig { Endpoint = "my_endpoint" };
+        ResolvedConnectionConfig resolved = HarnessUtils.ResolveConnection(connection, endpoints, secrets, "test");
+        Assert.Equal("sk-abc", resolved.ApiKey);
+        Assert.Equal("https://example.com", resolved.Url);
     }
 
     [Fact]
-    public void ResolveSecrets_ThrowsOnMissingKey()
+    public void ResolveConnection_SubstitutesUrlFields()
     {
-        var cfg = MakeRunConfig("${missing_key}");
+        var (endpoints, secrets) = MakeConfig("my_endpoint", "https://example.com/${deployment}", "api_key", "my_key", "sk-abc",
+            requiredFields: ["deployment"]);
+        var connection = new DeploymentConnectionConfig
+        {
+            Endpoint = "my_endpoint",
+            Fields   = new Dictionary<string, string> { ["deployment"] = "my-model" }
+        };
+        ResolvedConnectionConfig resolved = HarnessUtils.ResolveConnection(connection, endpoints, secrets, "test");
+        Assert.Equal("https://example.com/my-model", resolved.Url);
+    }
+
+    [Fact]
+    public void ResolveConnection_ThrowsOnMissingEndpoint()
+    {
+        var connection = new DeploymentConnectionConfig { Endpoint = "nonexistent" };
         Assert.Throws<InvalidOperationException>(() =>
-            HarnessUtils.ResolveSecrets(cfg, new Dictionary<string, string>()));
+            HarnessUtils.ResolveConnection(connection, new EndpointsConfig(), new SecretsConfig(), "test"));
     }
 
-    private static RunConfig MakeRunConfig(string apiKey) => new RunConfig
+    [Fact]
+    public void ResolveConnection_ThrowsOnMissingRequiredField()
     {
-        Deployments =
-        [
-            new DeploymentConfig
+        var (endpoints, secrets) = MakeConfig("my_endpoint", "https://example.com/${deployment}", "api_key", "my_key", "sk-abc",
+            requiredFields: ["deployment"]);
+        var connection = new DeploymentConnectionConfig { Endpoint = "my_endpoint" };
+        Assert.Throws<InvalidOperationException>(() =>
+            HarnessUtils.ResolveConnection(connection, endpoints, secrets, "test"));
+    }
+
+    private static (EndpointsConfig, SecretsConfig) MakeConfig(
+        string endpointName, string url, string authType, string keyName, string keyValue,
+        string[]? requiredFields = null)
+    {
+        var endpoints = new EndpointsConfig
+        {
+            Endpoints = new Dictionary<string, EndpointConfig>
             {
-                Label      = "test",
-                Mode       = DeploymentMode.StandardOpenAI,
-                Connection = new DeploymentConnectionConfig { ApiKey = apiKey }
+                [endpointName] = new EndpointConfig
+                {
+                    Url    = url,
+                    Auth   = new AuthConfig { Type = authType, Key = keyName, Header = "Authorization", Scheme = "Bearer" },
+                    Fields = requiredFields is not null ? new List<string>(requiredFields) : new List<string>()
+                }
             }
-        ]
-    };
+        };
+        var secrets = new SecretsConfig
+        {
+            Keys = new Dictionary<string, string> { [keyName] = keyValue }
+        };
+        return (endpoints, secrets);
+    }
 }

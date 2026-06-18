@@ -9,7 +9,10 @@ src/viewer/obj/
 !example.project/output/
 !example.project/log/
 
-# Secrets — never commit (example.project carries placeholder values so it can be committed)
+# Secrets and endpoint config — gitignored, shared out-of-band between teammates
+# example.project carries placeholder values and is committed as a reference
+**/endpoints.json
+!example.project/config/endpoints.json
 **/secrets.json
 !example.project/config/secrets.json
 

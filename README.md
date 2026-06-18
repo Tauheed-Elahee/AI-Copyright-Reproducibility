@@ -56,10 +56,12 @@ The harness operates on a **project directory** — a self-contained folder with
 my-study.project/
 ├── config.json             location manifest
 ├── config/
-│   ├── experiment.json     run settings
-│   ├── deployments.json    deployment arms
-│   ├── secrets.template.json  API keys template (commit this)
-│   └── secrets.json        API keys with real values (never commit — gitignored)
+│   ├── experiment.json          run settings
+│   ├── deployments.json         deployment arms
+│   ├── endpoints.template.json  endpoint structure template (commit this)
+│   ├── endpoints.json           endpoint URLs and auth config (never commit — gitignored)
+│   ├── secrets.template.json    API key names template (commit this)
+│   └── secrets.json             API key values (never commit — gitignored)
 ├── input/
 │   ├── text.json           text library
 │   ├── queries.json        query templates
@@ -80,23 +82,35 @@ my-study.project/
 Edit `config/experiment.json` to set iteration counts, timing, seeds, and parallelism. Set `"log_level"` to one of `verbose`, `info` (default), `warning`, or `error` to control console verbosity.  
 Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
 Edit files in `input/` to change the corpus, query templates, or prompt bindings.  
-Edit `config.json` only to change directory locations.  
-Copy `config/secrets.template.json` → `config/secrets.json` and fill in your API keys. Secrets are nested under `api.endpoints` and `api.keys`:
+Edit `config.json` only to change directory locations.
+
+Two gitignored files must be provided before running — copy from the committed templates and fill in real values:
+
+**`config/endpoints.json`** — endpoint URLs, auth structure, and field contracts. Copy from `endpoints.template.json`:
 
 ```json
 {
-  "api": {
-    "endpoints": {
-      "my_endpoint": "https://..."
-    },
-    "keys": {
-      "my_key": "sk-..."
+  "endpoints": {
+    "my_endpoint": {
+      "url": "https://example.com/api",
+      "auth": { "type": "api_key", "key": "my_key", "header": "Authorization", "scheme": "Bearer" },
+      "fields": []
     }
   }
 }
 ```
 
-Reference them in `deployments.json` with `${my_endpoint}` and `${my_key}`.
+**`config/secrets.json`** — API key values only. Copy from `secrets.template.json`:
+
+```json
+{
+  "keys": {
+    "my_key": "sk-..."
+  }
+}
+```
+
+`endpoints.json` and `secrets.json` travel through different channels: endpoint config is shared with anyone who needs to run the harness; key values go through a secrets manager. Azure-only deployments (using `DefaultAzureCredential`) need no `secrets.json` — there are no key values to supply.
 
 ## CLI
 
@@ -132,9 +146,10 @@ harness create my-new-study.project/
 ```
 
 Then:
-1. Fill in `config/secrets.json` with your API keys.
-2. Edit `config/deployments.json`, `input/text.json`, `input/queries.json`.
-3. `harness run my-new-study.project/`
+1. Fill in `config/endpoints.json` with your endpoint URLs (copy from `endpoints.template.json`).
+2. Fill in `config/secrets.json` with your API keys (copy from `secrets.template.json`).
+3. Edit `config/deployments.json`, `input/text.json`, `input/queries.json`.
+4. `harness run my-new-study.project/`
 
 ### Generate summary
 

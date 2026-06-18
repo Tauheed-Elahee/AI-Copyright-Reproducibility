@@ -4,8 +4,7 @@
       "label": "example-deployment",
       "mode": "StandardOpenAI",
       "connection": {
-        "endpoint": "${example}",
-        "api_key": "${example}"
+        "endpoint": "example"
       },
       "parameters": {
         "model": "example-model",

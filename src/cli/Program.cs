@@ -288,19 +288,19 @@ namespace AICopyrightReproducibility
                 Directory.CreateDirectory(outDir);
                 OutputWriter.WriteRunConfig(cfg, outDir);
 
+                string endpointsPath = Path.Combine(configLocDir, "endpoints.json");
+                EndpointsConfig endpointsCfg = File.Exists(endpointsPath)
+                    ? JsonSerializer.Deserialize<EndpointsConfig>(
+                          File.ReadAllText(endpointsPath), readOpts) ?? new()
+                    : new();
+                logger.Info($"Loaded endpoints: {endpointsPath}");
+
                 string secretsPath = Path.Combine(configLocDir, "secrets.json");
                 SecretsConfig secretsCfg = File.Exists(secretsPath)
                     ? JsonSerializer.Deserialize<SecretsConfig>(
                           File.ReadAllText(secretsPath), readOpts) ?? new()
                     : new();
-                Dictionary<string, string> secrets = secretsCfg.Flatten();
-                HarnessUtils.ResolveSecrets(cfg, secrets);
                 logger.Info($"Loaded secrets: {secretsPath}");
-
-                string fallbackScope = cfg.Deployments
-                    .Select(a => a.Connection.TokenScope)
-                    .FirstOrDefault(s => s != null)
-                    ?? "https://ai.azure.com/.default";
 
                 bool needsAzure = cfg.Deployments.Any(d =>
                     d.Mode is DeploymentMode.AzureModeApi or DeploymentMode.AzureAgentApi);
@@ -311,12 +311,16 @@ namespace AICopyrightReproducibility
 
                 Dictionary<string, IDeploymentExecutor> executors = cfg.Deployments.ToDictionary(
                     d => d.Label,
-                    d => d.Mode switch
+                    d =>
                     {
-                        DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(d, credential!, fallbackScope, logger),
-                        DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http!, credential!, d, fallbackScope, logger),
-                        DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(d, logger),
-                        _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
+                        ResolvedConnectionConfig r = HarnessUtils.ResolveConnection(d.Connection, endpointsCfg, secretsCfg, d.Label);
+                        return d.Mode switch
+                        {
+                            DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(r, credential!, logger),
+                            DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http!, credential!, r, logger),
+                            DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(r, d.Parameters, logger),
+                            _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
+                        };
                     });
 
                 logger.Info($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
@@ -404,17 +408,20 @@ namespace AICopyrightReproducibility
             File.WriteAllText(Path.Combine(destination.FullName, "config.json"),             TemplateConfigJson);
             File.WriteAllText(Path.Combine(destination.FullName, "config", "experiment.json"),     TemplateExperimentJson);
             File.WriteAllText(Path.Combine(destination.FullName, "config", "deployments.json"),    TemplateDeploymentsJson);
-            File.WriteAllText(Path.Combine(destination.FullName, "config", "secrets.template.json"), TemplateSecretsJson);
-            File.WriteAllText(Path.Combine(destination.FullName, "config", "secrets.json"),        TemplateSecretsJson);
-            File.WriteAllText(Path.Combine(destination.FullName, "input", "queries.json"),         TemplateQueriesJson);
-            File.WriteAllText(Path.Combine(destination.FullName, "input", "prompts.json"),         TemplatePromptsJson);
-            File.WriteAllText(Path.Combine(destination.FullName, "input", "text.json"),            TemplateTextJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "config", "endpoints.template.json"), TemplateEndpointsJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "config", "endpoints.json"),         TemplateEndpointsJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "config", "secrets.template.json"),  TemplateSecretsJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "config", "secrets.json"),           TemplateSecretsJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "input", "queries.json"),            TemplateQueriesJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "input", "prompts.json"),            TemplatePromptsJson);
+            File.WriteAllText(Path.Combine(destination.FullName, "input", "text.json"),               TemplateTextJson);
 
             Console.WriteLine($"Created project: {destination.FullName}");
             Console.WriteLine("Next steps:");
-            Console.WriteLine($"  1. Fill in config/secrets.json with your API keys.");
-            Console.WriteLine($"  2. Edit config/deployments.json, input/text.json, input/queries.json.");
-            Console.WriteLine($"  3. harness run \"{destination.FullName}\"");
+            Console.WriteLine($"  1. Fill in config/endpoints.json with your endpoint URLs.");
+            Console.WriteLine($"  2. Fill in config/secrets.json with your API keys.");
+            Console.WriteLine($"  3. Edit config/deployments.json, input/text.json, input/queries.json.");
+            Console.WriteLine($"  4. harness run \"{destination.FullName}\"");
             return Task.FromResult(0);
         }
 
@@ -482,18 +489,29 @@ namespace AICopyrightReproducibility
             }
             """;
 
+        private const string TemplateEndpointsJson =
+            """
+            {
+              "endpoints": {
+                "my_endpoint": {
+                  "url": "https://example.com/endpoint",
+                  "auth": {
+                    "type": "api_key",
+                    "key": "my_key",
+                    "header": "Authorization",
+                    "scheme": "Bearer"
+                  },
+                  "fields": []
+                }
+              }
+            }
+            """;
+
         private const string TemplateSecretsJson =
             """
             {
-              "api": {
-                "endpoints": {
-                  "azure_model": "",
-                  "azure_agent_base": ""
-                },
-                "keys": {
-                  "deepseek": "",
-                  "openai": ""
-                }
+              "keys": {
+                "my_key": ""
               }
             }
             """;

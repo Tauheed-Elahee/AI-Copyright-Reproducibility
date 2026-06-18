@@ -139,26 +139,49 @@ namespace AICopyrightReproducibility.Utils
             return result;
         }
 
-        public static void ResolveSecrets(RunConfig cfg, Dictionary<string, string> secrets)
+        public static ResolvedConnectionConfig ResolveConnection(
+            DeploymentConnectionConfig connection,
+            EndpointsConfig endpoints,
+            SecretsConfig secrets,
+            string label)
         {
-            foreach (DeploymentConfig deployment in cfg.Deployments)
-            {
-                DeploymentConnectionConfig c = deployment.Connection;
-                Dictionary<string, string> lookup = new(secrets);
-                if (c.Agent?.Name   is not null) lookup["agent_name"]   = c.Agent.Name;
-                if (c.Agent?.Suffix is not null) lookup["agent_suffix"] = c.Agent.Suffix;
+            string epName = connection.Endpoint
+                ?? throw new InvalidOperationException($"Deployment '{label}' missing connection.endpoint.");
 
-                c.Endpoint           = Resolve(c.Endpoint,           lookup, deployment.Label);
-                c.TokenScope         = Resolve(c.TokenScope,         lookup, deployment.Label);
-                c.Deployment         = Resolve(c.Deployment,         lookup, deployment.Label);
-                c.ApiVersionOverride = Resolve(c.ApiVersionOverride, lookup, deployment.Label);
-                c.ApiKey             = Resolve(c.ApiKey,             lookup, deployment.Label);
-                if (c.Agent is not null)
-                {
-                    c.Agent.Endpoint   = Resolve(c.Agent.Endpoint,   lookup, deployment.Label);
-                    c.Agent.ApiVersion = Resolve(c.Agent.ApiVersion, lookup, deployment.Label);
-                }
+            if (!endpoints.Endpoints.TryGetValue(epName, out EndpointConfig? ep))
+                throw new InvalidOperationException($"Deployment '{label}': endpoint '{epName}' not found in endpoints.");
+
+            foreach (string f in ep.Fields)
+                if (!connection.Fields.ContainsKey(f))
+                    throw new InvalidOperationException(
+                        $"Deployment '{label}': endpoint '{epName}' requires field '{f}'.");
+
+            string url = Regex.Replace(ep.Url, @"\$\{([^}]+)\}", m =>
+            {
+                string key = m.Groups[1].Value;
+                return connection.Fields.TryGetValue(key, out string? v) ? v
+                    : throw new InvalidOperationException(
+                        $"Deployment '{label}': no value for URL token '${{{key}}}'.");
+            });
+
+            string? apiKey = null;
+            if (ep.Auth.Type == "api_key" && ep.Auth.Key is not null)
+            {
+                if (!secrets.Keys.TryGetValue(ep.Auth.Key, out apiKey))
+                    throw new InvalidOperationException(
+                        $"Deployment '{label}': key '{ep.Auth.Key}' not found in secrets.");
             }
+
+            return new ResolvedConnectionConfig
+            {
+                Url        = url,
+                AuthType   = ep.Auth.Type,
+                TokenScope = ep.Auth.Scope,
+                ApiKey     = apiKey,
+                AuthHeader = ep.Auth.Header,
+                AuthScheme = ep.Auth.Scheme,
+                Fields     = connection.Fields,
+            };
         }
 
         private static void ValidateTemplate(string queryLabel, string textLabel,
@@ -177,18 +200,6 @@ namespace AICopyrightReproducibility.Utils
                 throw new InvalidOperationException(
                     $"Query '{queryLabel}' bound to text '{textLabel}' has unresolvable placeholder(s): " +
                     string.Join(", ", unresolved.Select(k => "{" + k + "}")));
-        }
-
-        private static string? Resolve(string? value, Dictionary<string, string> lookup, string deploymentLabel)
-        {
-            if (value is null || !value.Contains("${")) return value;
-            return Regex.Replace(value, @"\$\{([^}]+)\}", m =>
-            {
-                string key = m.Groups[1].Value;
-                return lookup.TryGetValue(key, out string? s) ? s
-                    : throw new InvalidOperationException(
-                        $"Deployment '{deploymentLabel}': secret or field '{key}' not found.");
-            });
         }
 
         public static List<BoundPrompt> BindPrompts(

@@ -17,18 +17,12 @@ namespace AICopyrightReproducibility.Executors.Azure
     {
         private readonly StandardOpenAIExecutor _inner;
 
-        public AzureModeApi(DeploymentConfig deployment, DefaultAzureCredential credential, string fallbackScope, Logger logger)
+        public AzureModeApi(ResolvedConnectionConfig resolved, DefaultAzureCredential credential, Logger logger)
         {
-            string modelDeployment = deployment.Connection.Deployment
-                ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.deployment.");
-            BearerTokenPolicy tp = new BearerTokenPolicy(credential, deployment.Connection.TokenScope ?? fallbackScope);
-            OpenAIClientOptions opts = new OpenAIClientOptions
-            {
-                Endpoint = new Uri(deployment.Connection.Endpoint
-                    ?? throw new InvalidOperationException($"Deployment '{deployment.Label}' missing connection.endpoint."))
-            };
-            if (deployment.Connection.ApiVersionOverride is not null)
-                opts.AddPolicy(new ApiVersionPolicy(deployment.Connection.ApiVersionOverride), PipelinePosition.PerCall);
+            string modelDeployment = resolved.Fields.TryGetValue("deployment", out string? dep) ? dep
+                : throw new InvalidOperationException("AzureModeApi requires a 'deployment' field.");
+            BearerTokenPolicy tp = new BearerTokenPolicy(credential, resolved.TokenScope ?? "https://ai.azure.com/.default");
+            OpenAIClientOptions opts = new OpenAIClientOptions { Endpoint = new Uri(resolved.Url) };
             ChatClient client = new ChatClient(modelDeployment, authenticationPolicy: tp, options: opts);
             _inner = new StandardOpenAIExecutor(client, logger, modelDeployment);
         }
@@ -43,6 +37,5 @@ namespace AICopyrightReproducibility.Executors.Azure
             string rawFileName,
             RetryConfig retry) =>
             _inner.ExecuteAsync(prompt, label, parameters, omitNullFields, index, outDir, rawFileName, retry);
-
     }
 }

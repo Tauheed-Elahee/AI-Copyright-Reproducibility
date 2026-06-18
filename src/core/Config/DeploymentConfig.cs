@@ -19,29 +19,21 @@ namespace AICopyrightReproducibility.Config
 
     public enum DeploymentMode { AzureModeApi, AzureAgentApi, StandardOpenAI }
 
-    public sealed class AgentConnectionConfig
-    {
-        public string? Endpoint   { get; set; }
-        public string? Name       { get; set; }
-        public string? Suffix     { get; set; }
-        public string? ApiVersion { get; set; }
-    }
-
     public sealed class DeploymentConnectionConfig
     {
-        // AzureModeApi + StandardOpenAI
-        public string? Endpoint           { get; set; }
-        public string? ApiKey             { get; set; }
+        public string?                    Endpoint { get; set; }
+        public Dictionary<string, string> Fields   { get; set; } = new();
+    }
 
-        // AzureModeApi + AzureAgentApi
-        public string? TokenScope         { get; set; }
-
-        // AzureModeApi
-        public string? Deployment         { get; set; }
-        public string? ApiVersionOverride { get; set; }
-
-        // AzureAgentApi
-        public AgentConnectionConfig? Agent { get; set; }
+    public sealed class ResolvedConnectionConfig
+    {
+        public string                     Url        { get; set; } = "";
+        public string                     AuthType   { get; set; } = "";
+        public string?                    TokenScope { get; set; }
+        public string?                    ApiKey     { get; set; }
+        public string                     AuthHeader { get; set; } = "Authorization";
+        public string?                    AuthScheme { get; set; } = "Bearer";
+        public Dictionary<string, string> Fields     { get; set; } = new();
     }
 
     public sealed class DeploymentConfig

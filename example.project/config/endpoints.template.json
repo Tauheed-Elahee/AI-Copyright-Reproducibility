@@ -1,0 +1,14 @@
+{
+  "endpoints": {
+    "example": {
+      "url": "https://example.com/endpoint",
+      "auth": {
+        "type": "api_key",
+        "key": "example",
+        "header": "Authorization",
+        "scheme": "Bearer"
+      },
+      "fields": []
+    }
+  }
+}
