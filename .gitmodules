@@ -1,3 +1,3 @@
-[submodule "docs/_hyde"]
-	path = docs/_hyde
-	url = https://github.com/poole/hyde.git
+[submodule "docs/_just-the-docs"]
+	path = docs/_just-the-docs
+	url = https://github.com/just-the-docs/just-the-docs.git

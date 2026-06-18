@@ -4,9 +4,6 @@ description: A reproducibility harness for LLM deployment testing across Azure A
 url:         https://ai-copyright-reproducibility.tauheed-elahee.com
 baseurl:     ""
 
-author:
-  name: Tauheed Elahee
-  url:  https://github.com/Tauheed-Elahee
-
-github:
-  repo: https://github.com/Tauheed-Elahee/AI-Copyright-Reproducibility
+aux_links:
+  GitHub:
+    - https://github.com/Tauheed-Elahee/AI-Copyright-Reproducibility

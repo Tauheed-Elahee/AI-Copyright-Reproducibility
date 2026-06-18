@@ -45,11 +45,12 @@ jobs:
       - name: Build results viewer
         run: dotnet publish src/viewer/ -c Release -o dist/viewer/
 
-      - name: Apply Hyde theme
+      - name: Apply Just the Docs theme
         run: |
-          cp -rn docs/_hyde/_layouts docs/
-          cp -rn docs/_hyde/_includes docs/
-          cp -r docs/_hyde/public docs/
+          cp -rn docs/_just-the-docs/_layouts docs/
+          cp -rn docs/_just-the-docs/_includes docs/
+          cp -rn docs/_just-the-docs/_sass docs/
+          cp -r docs/_just-the-docs/assets docs/
 
       - uses: actions/jekyll-build-pages@v1
         with:
