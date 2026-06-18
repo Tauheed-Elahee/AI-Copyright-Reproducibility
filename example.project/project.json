@@ -2,7 +2,7 @@
   "project": {
     "name": "Example Project",
     "author": "",
-    "date": "",
+    "date": null,
     "version": { "created": null, "compatible": null, "last_run": null },
     "location": "",
     "edition": null,

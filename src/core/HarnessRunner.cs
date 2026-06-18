@@ -89,7 +89,7 @@ namespace AICopyrightReproducibility
 
                 if (s < _iterations.Set && _pause.Set > 0)
                 {
-                    DateTime resume = DateTime.UtcNow.AddSeconds(_pause.Set);
+                    DateTimeOffset resume = DateTimeOffset.UtcNow.AddSeconds(_pause.Set);
                     _logger.Info($"Set {s}/{_iterations.Set} complete. " +
                         $"Resuming at {resume:HH:mm:ss} UTC.");
                     await Task.Delay(TimeSpan.FromSeconds(_pause.Set));

@@ -35,7 +35,7 @@ namespace AICopyrightReproducibility.Utils
         {
             Deployment   = label,
             Index        = index,
-            TimestampUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)
+            TimestampUtc = DateTimeOffset.UtcNow
         };
 
         public static Dictionary<string, object?> BuildRequestBody(

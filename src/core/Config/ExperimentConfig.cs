@@ -1,3 +1,5 @@
+using System;
+
 namespace AICopyrightReproducibility.Config
 {
     public sealed class IterationsConfig
@@ -100,16 +102,16 @@ namespace AICopyrightReproducibility.Config
 
     public sealed class EditionConfig
     {
-        public int    Number   { get; set; }
-        public string Date     { get; set; } = "";
-        public bool   ReadOnly { get; set; }
+        public int       Number   { get; set; }
+        public DateOnly? Date     { get; set; }
+        public bool      ReadOnly { get; set; }
     }
 
     public sealed class ProjectConfig
     {
         public string?        Name     { get; set; }
         public string?        Author   { get; set; }
-        public string?        Date     { get; set; }
+        public DateOnly?      Date     { get; set; }
         public VersionConfig? Version  { get; set; }
         public string?        Location { get; set; }
         public EditionConfig? Edition  { get; set; }

@@ -62,7 +62,7 @@ namespace AICopyrightReproducibility
                     r.ListTask  ? "1" : "0",
                     r.OrderTask ? "1" : "0",
                     r.Index.ToString(CultureInfo.InvariantCulture),
-                    Csv(r.TimestampUtc),
+                    r.TimestampUtc.ToString("o", CultureInfo.InvariantCulture),
                     r.Status.ToString(CultureInfo.InvariantCulture),
                     r.DurationMs.ToString(CultureInfo.InvariantCulture),
                     r.RetryCount.ToString(CultureInfo.InvariantCulture),

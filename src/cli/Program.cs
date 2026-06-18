@@ -342,7 +342,7 @@ namespace AICopyrightReproducibility
 
                 OutputWriter.WriteRunConfig(new RunSnapshot
                 {
-                    CapturedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    CapturedUtc = DateTimeOffset.UtcNow,
                     Project     = new ProjectSnapshot
                     {
                         Name   = cfg.Project.Name,
@@ -476,7 +476,7 @@ namespace AICopyrightReproducibility
                 {
                     Name     = projectName,
                     Author   = "",
-                    Date     = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    Date     = DateOnly.FromDateTime(DateTime.UtcNow),
                     Version  = new VersionConfig { Created = harnessVersion, Compatible = harnessVersion },
                     Location = destination.FullName,
                     Edition  = (EditionConfig?)null,

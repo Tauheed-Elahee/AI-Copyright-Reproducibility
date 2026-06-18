@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -45,9 +46,9 @@ namespace AICopyrightReproducibility.Config
 
     public sealed class ProjectSnapshot
     {
-        public string? Name   { get; set; }
-        public string? Author { get; set; }
-        public string? Date   { get; set; }
+        public string?   Name   { get; set; }
+        public string?   Author { get; set; }
+        public DateOnly? Date   { get; set; }
     }
 
     public sealed class DeploymentSnapshot
@@ -64,7 +65,7 @@ namespace AICopyrightReproducibility.Config
 
     public sealed class RunSnapshot
     {
-        public string                   CapturedUtc { get; set; } = "";
+        public DateTimeOffset           CapturedUtc { get; set; }
         public ProjectSnapshot?         Project     { get; set; }
         public ExperimentConfig         Experiment  { get; set; } = new();
         public List<QueryConfig>        Queries     { get; set; } = new();
@@ -81,7 +82,7 @@ namespace AICopyrightReproducibility.Config
         public bool    ListTask            { get; set; }
         public bool    OrderTask           { get; set; }
         public int     Index               { get; set; }
-        public string  TimestampUtc        { get; set; } = "";
+        public DateTimeOffset TimestampUtc  { get; set; }
         public int     Status              { get; set; }
         public long    DurationMs          { get; set; }
         public int     RetryCount          { get; set; }
