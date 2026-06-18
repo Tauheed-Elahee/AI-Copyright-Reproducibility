@@ -13,6 +13,10 @@ src/viewer/obj/
 **/secrets.json
 !example.project/config/secrets.json
 
+# Jekyll
+docs/Gemfile.lock
+_site/
+
 # Internal session docs
 CONTEXT/
 
