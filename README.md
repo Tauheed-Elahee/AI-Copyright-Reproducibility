@@ -8,14 +8,14 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 
 - Authenticates with Microsoft Entra ID (`DefaultAzureCredential`) for Azure deployments, or an
   API key for native DeepSeek.
-- Sends fully parameterized request bodies assembled from `config/deployments.config.json`.
-- Captures the **full raw JSON response** for every run to its own file.
+- Sends fully parameterized request bodies assembled from `config/deployments.json`.
+- Captures the **full raw JSON response** for every run to its own file under `output/<timestamp>/runs/`.
 - Parses each response for `model`, `system_fingerprint`, `id`, `created`, token usage, and
   `finish_reason`.
 - Computes a **SHA-256 of the assistant message content** (not the whole envelope) as the identity
   key — produces identity groups automatically across runs.
 - Scores list tasks: exact matches, coverage, hallucinations, ordering accuracy.
-- Writes `run-config.json`, `manifest.csv`, `summary_counts.csv`, `summary_pct.csv`.
+- Writes `run-config.json`, `manifest.json`, `manifest.csv`, `summary_counts.csv`, `summary_pct.csv`.
 
 ## Layout
 
@@ -36,9 +36,10 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 │   ├── build/              build.sh / build.bat
 │   ├── run/                run.sh   / run.bat
 │   ├── test/               test.sh  / test.bat
-│   └── view/               status.sh / status.bat
-├── .github/workflows/      release.yml — tests then publishes binaries on version tag
-├── docs/                   GitHub Pages
+│   ├── view/               status.sh / status.bat
+│   └── viewer/             update-data.sh / update-data.bat
+├── .github/workflows/      pages.yml — docs + viewer; release.yml — binaries on version tag
+├── docs/                   GitHub Pages (Just the Docs theme)
 └── *.md                    documentation
 ```
 
@@ -57,16 +58,22 @@ my-study.project/
 ├── config/
 │   ├── experiment.json     run settings
 │   ├── deployments.json    deployment arms
-│   └── secrets.json        API keys (never commit this — it is gitignored)
+│   ├── secrets.template.json  API keys template (commit this)
+│   └── secrets.json        API keys with real values (never commit — gitignored)
 ├── input/
 │   ├── text.json           text library
 │   ├── queries.json        query templates
 │   └── prompts.json        prompt bindings
 ├── output/                 run output (created automatically)
+│   └── <timestamp>/
+│       ├── runs/           raw per-request JSON responses
+│       ├── manifest.json   full run record
+│       ├── manifest.csv
+│       ├── summary_counts.csv
+│       ├── summary_pct.csv
+│       └── run-config.json
 └── log/                    run logs (created automatically)
 ```
-
-Copy `example.project/` to start a new study, then edit the files inside it.
 
 ## Configure
 
@@ -74,16 +81,69 @@ Edit `config/experiment.json` to set iteration counts, timing, seeds, and parall
 Edit `config/deployments.json` to add, remove, or adjust deployment arms.  
 Edit files in `input/` to change the corpus, query templates, or prompt bindings.  
 Edit `config.json` only to change directory locations.  
-Copy `config/secrets.template.json` → `config/secrets.json` and fill in your API keys.
+Copy `config/secrets.template.json` → `config/secrets.json` and fill in your API keys. Secrets are nested under `api.endpoints` and `api.keys`:
 
-## Run
+```json
+{
+  "api": {
+    "endpoints": {
+      "my_endpoint": "https://..."
+    },
+    "keys": {
+      "my_key": "sk-..."
+    }
+  }
+}
+```
+
+Reference them in `deployments.json` with `${my_endpoint}` and `${my_key}`.
+
+## CLI
+
+```
+harness <command> [options]
+```
+
+| Command | Description |
+|---|---|
+| `harness run <dir>...` | Run an experiment from one or more project directories |
+| `harness create <dir>...` | Create a new project directory with template config files |
+| `harness generate summary [run-dir]` | Regenerate `manifest.csv` and summary CSVs from an existing `manifest.json` |
+| `harness [project-dir]` | Shorthand for `harness run` — uses the current directory if omitted |
+| `harness --help` / `-h` | Show global help |
+| `harness help generate` | Show help for the `generate` subcommand |
+
+### Run
 
 ```bash
-harness <project-dir>   # explicit path
-harness                 # uses current directory if it contains config.json
+harness run my-study.project/        # explicit path
+harness run proj-a/ proj-b/ proj-c/  # multiple projects in sequence
+harness                               # uses current directory if it contains config.json
 ```
 
 Output lands in `<project-dir>/output/<timestamp>/`.
+
+### Create
+
+Scaffolds a new project directory with template config files:
+
+```bash
+harness create my-new-study.project/
+```
+
+Then:
+1. Fill in `config/secrets.json` with your API keys.
+2. Edit `config/deployments.json`, `input/text.json`, `input/queries.json`.
+3. `harness run my-new-study.project/`
+
+### Generate summary
+
+Regenerates `manifest.csv`, `summary_counts.csv`, and `summary_pct.csv` from an existing `manifest.json` without re-running the experiment:
+
+```bash
+harness generate summary my-study.project/output/20260617-120000/
+harness generate summary   # uses current directory
+```
 
 ## Prerequisites (Azure)
 
@@ -97,7 +157,7 @@ Output lands in `<project-dir>/output/<timestamp>/`.
 Requires .NET SDK 8.0+.
 
 ```bash
-dotnet run --project src/cli/ -- <project-dir>
+dotnet run --project src/cli/ -- run <project-dir>
 ```
 
 Or build a self-contained binary for your platform:
@@ -105,7 +165,7 @@ Or build a self-contained binary for your platform:
 ```bash
 dotnet publish src/cli/ -c Release -r linux-x64 --self-contained \
   -p:PublishSingleFile=true -p:AssemblyName=harness -o dist/
-./dist/harness <project-dir>
+./dist/harness run <project-dir>
 ```
 
 ## Scripts
