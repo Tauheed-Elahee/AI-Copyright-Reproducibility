@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../src-core/AICopyrightReproducibility.Core.csproj" />
+    <ProjectReference Include="../core/AICopyrightReproducibility.Core.csproj" />
   </ItemGroup>
 
 </Project>

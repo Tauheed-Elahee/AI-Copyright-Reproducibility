@@ -5,6 +5,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 PROJECT="$1"
-dotnet restore src/
-dotnet build   src/
-dotnet run --project src/ -- "$PROJECT"
+dotnet restore src/cli/
+dotnet build   src/cli/
+dotnet run --project src/cli/ -- "$PROJECT"

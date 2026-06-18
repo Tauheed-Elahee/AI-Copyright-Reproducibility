@@ -43,7 +43,7 @@ jobs:
         run: dotnet workload install wasm-tools
 
       - name: Build results viewer
-        run: dotnet publish src-viewer/ -c Release -o dist/viewer/
+        run: dotnet publish src/viewer/ -c Release -o dist/viewer/
 
       - name: Apply Hyde theme
         run: |

@@ -72,16 +72,16 @@ A proper windowed application with forms, panels, and native OS chrome.
 
 ## Implemented — Blazor WASM Results Viewer
 
-A read-only post-run results viewer has been built as a separate Blazor WASM project (`src-viewer/`), distinct from the above options (which are all about a live GUI during execution).
+A read-only post-run results viewer has been built as a separate Blazor WASM project (`src/viewer/`), distinct from the above options (which are all about a live GUI during execution).
 
 | Dimension | Detail |
 |---|---|
 | **Hosted at** | `ai-copyright-reproducibility.tauheed-elahee.com/viewer/` (GitHub Pages) |
-| **Default data** | `medical-texts.project` run committed in `src-viewer/wwwroot/data/manifest.json` |
+| **Default data** | `medical-texts.project` run committed in `src/viewer/wwwroot/data/manifest.json` |
 | **File picker** | Load any local `manifest.json` from a completed run |
 | **What it shows** | Run summary, per-deployment stats table, identity groups (grouped by content SHA-256) |
 | **Binary size** | ~21 MB `_framework/` (Blazor WASM runtime + IL-trimmed assemblies); not part of the CLI binary |
 | **Deployment** | Built in CI (`deploy-pages` job), merged into `_site/viewer/` after Jekyll build |
-| **Key technical note** | References `src-core/` for `RunRecord`; Azure.Identity and OpenAI SDK code is eliminated by the IL trimmer at publish time. Requires `src-viewer/Directory.Build.props` to give the project its own `obj/` — the shared `build/obj/` from `Directory.Build.props` only has `net8.0` targets and not `browser-wasm`. |
+| **Key technical note** | References `src/core/` for `RunRecord`; Azure.Identity and OpenAI SDK code is eliminated by the IL trimmer at publish time. Requires `src/viewer/Directory.Build.props` to give the project its own `obj/` — the shared `build/obj/` from `Directory.Build.props` only has `net8.0` targets and not `browser-wasm`. |
 
 This does not replace Options A–C, which remain the paths forward for a live execution GUI.

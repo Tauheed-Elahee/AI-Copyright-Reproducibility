@@ -22,14 +22,15 @@ for every run. Built to support the Clinical-AI Reproducibility Annex.
 ```
 /
 ├── example.project/        template — copy this to start a new study
-├── src/                    CLI entry point (Program.cs)
-├── src-core/               shared library — logic, config, executors, utils
-│   ├── Config/             config + runtime types
-│   ├── Executors/
-│   │   ├── Azure/          AzureModeApi, AzureAgentApiExecutor
-│   │   └── Standard/       StandardOpenAIExecutor
-│   └── Utils/              HarnessUtils, ScoringUtils, HttpPolicies, Logger
-├── src-viewer/             Blazor WASM results viewer (deployed to /viewer/ on GitHub Pages)
+├── src/
+│   ├── cli/                CLI entry point (Program.cs)
+│   ├── core/               shared library — logic, config, executors, utils
+│   │   ├── Config/         config + runtime types
+│   │   ├── Executors/
+│   │   │   ├── Azure/      AzureModeApi, AzureAgentApiExecutor
+│   │   │   └── Standard/   StandardOpenAIExecutor
+│   │   └── Utils/          HarnessUtils, ScoringUtils, HttpPolicies, Logger
+│   └── viewer/             Blazor WASM results viewer (deployed to /viewer/ on GitHub Pages)
 ├── tests/                  xUnit test project
 ├── scripts/
 │   ├── build/              build.sh / build.bat
@@ -96,13 +97,13 @@ Output lands in `<project-dir>/output/<timestamp>/`.
 Requires .NET SDK 8.0+.
 
 ```bash
-dotnet run --project src/ -- <project-dir>
+dotnet run --project src/cli/ -- <project-dir>
 ```
 
 Or build a self-contained binary for your platform:
 
 ```bash
-dotnet publish src/ -c Release -r linux-x64 --self-contained \
+dotnet publish src/cli/ -c Release -r linux-x64 --self-contained \
   -p:PublishSingleFile=true -p:AssemblyName=harness -o dist/
 ./dist/harness <project-dir>
 ```
@@ -191,10 +192,10 @@ It loads the committed `medical-texts.project` run by default and renders:
 
 To view a local run, use the **Load local manifest.json** button in the bottom bar and select any `manifest.json` from your `output/<timestamp>/` directory.
 
-The viewer is a static site built in CI from `src-viewer/` and deployed to `/viewer/` alongside the Jekyll documentation. To run it locally:
+The viewer is a static site built in CI from `src/viewer/` and deployed to `/viewer/` alongside the Jekyll documentation. To run it locally:
 
 ```bash
-dotnet run --project src-viewer/ --pathbase /viewer/
+dotnet run --project src/viewer/ --pathbase /viewer/
 ```
 
 ### Updating the default dataset
@@ -206,7 +207,7 @@ bash scripts/viewer/update-data.sh <project-dir>/output/<timestamp>/manifest.jso
 scripts\viewer\update-data.bat <project-dir>\output\<timestamp>\manifest.json   # Windows
 ```
 
-Then commit `src-viewer/wwwroot/data/manifest.json`. The updated data deploys on the next tagged release.
+Then commit `src/viewer/wwwroot/data/manifest.json`. The updated data deploys on the next tagged release.
 
 ## Methodological notes
 

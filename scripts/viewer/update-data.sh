@@ -9,7 +9,7 @@ if [ ! -f "$SRC" ]; then
     echo "Error: file not found: $SRC" >&2
     exit 1
 fi
-DST="src-viewer/wwwroot/data/manifest.json"
+DST="src/viewer/wwwroot/data/manifest.json"
 python3 - "$SRC" "$DST" <<'EOF'
 import json, sys
 KEEP = {

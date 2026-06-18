@@ -51,7 +51,7 @@ jobs:
 
       - name: Publish
         run: >
-          dotnet publish src/
+          dotnet publish src/cli/
           -c Release
           -r ${{ matrix.rid }}
           --self-contained

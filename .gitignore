@@ -1,6 +1,6 @@
 # .NET build artifacts
-build/
-src-viewer/obj/
+/build/
+src/viewer/obj/
 
 # Runtime output
 **/output/
