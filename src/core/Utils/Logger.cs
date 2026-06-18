@@ -34,7 +34,7 @@ namespace AICopyrightReproducibility.Utils
         private void Write(Level level, string msg)
         {
             string tagged    = Tag(level, msg);
-            string sysTagged = $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} {tagged}";
+            string sysTagged = $"{DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} {tagged}";
             lock (_lock)
             {
                 _file.WriteLine(tagged);
