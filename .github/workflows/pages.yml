@@ -32,8 +32,6 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -44,13 +42,6 @@ jobs:
 
       - name: Build results viewer
         run: dotnet publish src/viewer/ -c Release -o dist/viewer/
-
-      - name: Apply Just the Docs theme
-        run: |
-          cp -rn docs/_just-the-docs/_layouts docs/
-          cp -rn docs/_just-the-docs/_includes docs/
-          cp -rn docs/_just-the-docs/_sass docs/
-          cp -r docs/_just-the-docs/assets docs/
 
       - uses: ruby/setup-ruby@v1
         with:
