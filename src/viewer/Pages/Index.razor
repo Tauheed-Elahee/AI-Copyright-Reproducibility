@@ -189,7 +189,7 @@ else if (_records != null)
 
     private void ProcessRecords(List<RunRecord> records)
     {
-        _runLabel     = records[0].TimestampUtc;
+        _runLabel     = records[0].TimestampUtc.ToString("o");
         _deployments  = records.Select(r => r.Deployment).Distinct().OrderBy(d => d).ToList();
         _successCount = records.Count(r => r.Status == 200);
         _errorCount   = records.Count(r => r.Error != null || r.Status != 200);
