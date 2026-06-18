@@ -4,9 +4,8 @@
       "label": "deepseek-model",
       "mode": "AzureModeApi",
       "connection": {
-        "endpoint": "${azure_model}",
-        "token_scope": "https://ai.azure.com/.default",
-        "deployment": "DeepSeek-V4-Pro"
+        "endpoint": "azure_model",
+        "fields": { "deployment": "DeepSeek-V4-Pro" }
       },
       "parameters": {
         "temperature": 0.0,
@@ -92,13 +91,8 @@
       "label": "deepseek-agent",
       "mode": "AzureAgentApi",
       "connection": {
-        "token_scope": "https://ai.azure.com/.default",
-        "agent": {
-          "endpoint":    "${azure_agent_base}${agent_name}${agent_suffix}",
-          "name":        "Test-deterministic-DeepSeek",
-          "suffix":      "/endpoint/protocols/openai/responses",
-          "api_version": "2025-05-15-preview"
-        }
+        "endpoint": "azure_agent",
+        "fields": { "name": "Test-deterministic-DeepSeek", "api_version": "2025-05-15-preview" }
       },
       "parameters": {
         "max_output_tokens": 16384,
@@ -213,8 +207,7 @@
       "label": "deepseek-native",
       "mode": "StandardOpenAI",
       "connection": {
-        "endpoint": "https://api.deepseek.com",
-        "api_key": "${deepseek}"
+        "endpoint": "deepseek"
       },
       "parameters": {
         "model": "deepseek-v4-pro",
@@ -252,8 +245,7 @@
       "label": "deepseek-native-pct",
       "mode": "StandardOpenAI",
       "connection": {
-        "endpoint": "https://api.deepseek.com",
-        "api_key": "${deepseek}"
+        "endpoint": "deepseek"
       },
       "parameters": {
         "model": "deepseek-v4-pro",
@@ -291,9 +283,8 @@
       "label": "gpt-oss-model",
       "mode": "AzureModeApi",
       "connection": {
-        "endpoint": "${azure_model}",
-        "token_scope": "https://ai.azure.com/.default",
-        "deployment": "gpt-oss-120b"
+        "endpoint": "azure_model",
+        "fields": { "deployment": "gpt-oss-120b" }
       },
       "parameters": {
         "temperature": 0.0,
@@ -379,13 +370,8 @@
       "label": "gpt-oss-agent",
       "mode": "AzureAgentApi",
       "connection": {
-        "token_scope": "https://ai.azure.com/.default",
-        "agent": {
-          "endpoint":    "${azure_agent_base}${agent_name}${agent_suffix}",
-          "name":        "Test-deterministic-gpt-oss",
-          "suffix":      "/endpoint/protocols/openai/responses",
-          "api_version": "2025-05-15-preview"
-        }
+        "endpoint": "azure_agent",
+        "fields": { "name": "Test-deterministic-gpt-oss", "api_version": "2025-05-15-preview" }
       },
       "parameters": {
         "max_output_tokens": 16384,

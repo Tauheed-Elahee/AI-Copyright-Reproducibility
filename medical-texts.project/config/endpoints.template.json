@@ -1,0 +1,34 @@
+{
+  "endpoints": {
+    "azure_model": {
+      "url": "",
+      "auth": {
+        "type": "azure_credential",
+        "scope": "https://ai.azure.com/.default",
+        "header": "Authorization",
+        "scheme": "Bearer"
+      },
+      "fields": ["deployment"]
+    },
+    "azure_agent": {
+      "url": "",
+      "auth": {
+        "type": "azure_credential",
+        "scope": "https://ai.azure.com/.default",
+        "header": "Authorization",
+        "scheme": "Bearer"
+      },
+      "fields": ["name", "api_version"]
+    },
+    "deepseek": {
+      "url": "https://api.deepseek.com",
+      "auth": {
+        "type": "api_key",
+        "key": "deepseek",
+        "header": "Authorization",
+        "scheme": "Bearer"
+      },
+      "fields": []
+    }
+  }
+}
