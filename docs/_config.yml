@@ -7,3 +7,6 @@ baseurl:     ""
 aux_links:
   GitHub:
     - https://github.com/Tauheed-Elahee/AI-Copyright-Reproducibility
+
+plugins:
+  - jekyll-include-cache
