@@ -214,7 +214,7 @@ namespace AICopyrightReproducibility
         public static void WriteSummaryPctCsv(List<RunRecord> records, string path)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("text_label,query_label,deployment,n,n_ok,n_err,n_ok%,n_err%,perf_pct," +
+            sb.AppendLine("text_label,query_label,deployment,n,n_ok,n_err,n_ok%,n_err%,perf%," +
                           "coverage_pct,li1_first_pct,order_pct_mean,title_hit_pct,textbook_hit_pct," +
                           "list_logprob_geomean_pct,list_logprob_arith_pct," +
                           "list_logprob_median_geomean_pct,list_logprob_median_arith_pct," +
