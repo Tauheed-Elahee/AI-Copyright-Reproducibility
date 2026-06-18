@@ -396,6 +396,11 @@ namespace AICopyrightReproducibility
 
                 logger.Info($"\nOutput written to: {Path.GetFullPath(outDir)}");
 
+                if (cfg.Project.Location != projectDir)
+                {
+                    logger.Info($"Updated location: {cfg.Project.Location} -> {projectDir}");
+                    cfg.Project.Location = projectDir;
+                }
                 if (cfg.Project.Version is null)
                     cfg.Project.Version = new VersionConfig();
                 cfg.Project.Version.LastRun = harnessVersion;
