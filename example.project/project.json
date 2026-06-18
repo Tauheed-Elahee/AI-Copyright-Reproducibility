@@ -3,7 +3,7 @@
     "name": "Example Project",
     "author": "",
     "date": "",
-    "version": "",
+    "version": { "created": null, "compatible": null, "last_run": null },
     "location": "",
     "edition": null,
     "fs": {

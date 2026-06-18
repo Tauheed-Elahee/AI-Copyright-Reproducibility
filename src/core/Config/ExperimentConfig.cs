@@ -84,6 +84,20 @@ namespace AICopyrightReproducibility.Config
         public LocationConfig Log    { get; set; } = new() { Dir = "log"    };
     }
 
+    public sealed class HarnessVersion
+    {
+        public int Major { get; set; }
+        public int Minor { get; set; }
+        public int Patch { get; set; }
+    }
+
+    public sealed class VersionConfig
+    {
+        public HarnessVersion? Created    { get; set; }
+        public HarnessVersion? Compatible { get; set; }
+        public HarnessVersion? LastRun    { get; set; }
+    }
+
     public sealed class EditionConfig
     {
         public int    Number   { get; set; }
@@ -96,7 +110,7 @@ namespace AICopyrightReproducibility.Config
         public string?        Name     { get; set; }
         public string?        Author   { get; set; }
         public string?        Date     { get; set; }
-        public string?        Version  { get; set; }
+        public VersionConfig? Version  { get; set; }
         public string?        Location { get; set; }
         public EditionConfig? Edition  { get; set; }
         public FsConfig       Fs       { get; set; } = new();

@@ -203,6 +203,14 @@ namespace AICopyrightReproducibility
                                              Logger.Level.Info, sysLogWriter);
             logger.Info($"Loaded config : {configPath}");
 
+            HarnessVersion harnessVersion = GetHarnessVersion();
+            if (cfg.Project.Version?.Compatible is { } compat
+                && CompareVersions(harnessVersion, compat) < 0)
+            {
+                logger.Warn($"Project requires harness >= {compat.Major}.{compat.Minor}.{compat.Patch}; " +
+                            $"running with {harnessVersion.Major}.{harnessVersion.Minor}.{harnessVersion.Patch}.");
+            }
+
             static string AbsPath(string dir, string file) =>
                 Path.IsPathRooted(file) ? file : Path.Combine(dir, file);
 
@@ -383,6 +391,21 @@ namespace AICopyrightReproducibility
                 }
 
                 logger.Info($"\nOutput written to: {Path.GetFullPath(outDir)}");
+
+                if (cfg.Project.Version is null)
+                    cfg.Project.Version = new VersionConfig();
+                cfg.Project.Version.LastRun = harnessVersion;
+                JsonSerializerOptions writeBackOpts = new JsonSerializerOptions
+                {
+                    WriteIndented          = true,
+                    PropertyNamingPolicy   = JsonNamingPolicy.SnakeCaseLower,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                    Converters             = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+                };
+                File.WriteAllText(configPath,
+                    JsonSerializer.Serialize(new { project = cfg.Project }, writeBackOpts));
+                logger.Info($"Updated last_run in: {configPath}");
+
                 return 0;
             }
             catch (Exception ex)
@@ -445,7 +468,7 @@ namespace AICopyrightReproducibility
             string projectName = destination.Name.EndsWith(".project", StringComparison.OrdinalIgnoreCase)
                 ? destination.Name[..^".project".Length]
                 : destination.Name;
-            string harnessVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
+            HarnessVersion harnessVersion = GetHarnessVersion();
 
             var projectManifest = new
             {
@@ -454,7 +477,7 @@ namespace AICopyrightReproducibility
                     Name     = projectName,
                     Author   = "",
                     Date     = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    Version  = harnessVersion,
+                    Version  = new VersionConfig { Created = harnessVersion, Compatible = harnessVersion },
                     Location = destination.FullName,
                     Edition  = (EditionConfig?)null,
                     Fs       = new FsConfig
@@ -610,6 +633,21 @@ namespace AICopyrightReproducibility
               ]
             }
             """;
+
+        private static HarnessVersion GetHarnessVersion()
+        {
+            var v = Assembly.GetExecutingAssembly().GetName().Version;
+            return v != null
+                ? new HarnessVersion { Major = v.Major, Minor = v.Minor, Patch = v.Build }
+                : new HarnessVersion();
+        }
+
+        private static int CompareVersions(HarnessVersion a, HarnessVersion b)
+        {
+            if (a.Major != b.Major) return a.Major.CompareTo(b.Major);
+            if (a.Minor != b.Minor) return a.Minor.CompareTo(b.Minor);
+            return a.Patch.CompareTo(b.Patch);
+        }
 
         private static void FlattenJson(JsonElement element, string prefix, Dictionary<string, string> result)
         {
