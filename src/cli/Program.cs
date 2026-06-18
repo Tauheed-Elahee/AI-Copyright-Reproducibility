@@ -20,6 +20,44 @@ namespace AICopyrightReproducibility
     {
         public static async Task<int> Main(string[] args)
         {
+            if (args.Length >= 1 && args[0] == "stats")
+            {
+                string runDir = args.Length >= 2
+                    ? Path.GetFullPath(args[1])
+                    : Directory.GetCurrentDirectory();
+
+                string manifestPath = Path.Combine(runDir, "manifest.json");
+                if (!File.Exists(manifestPath))
+                {
+                    Console.Error.WriteLine($"manifest.json not found in: {runDir}");
+                    return 1;
+                }
+
+                string statsStamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+                using StreamWriter statsLog = new StreamWriter(
+                    Path.Combine(runDir, $"stats-{statsStamp}.log"), append: false) { AutoFlush = true };
+                using Logger statsLogger = new Logger(Console.Out, Console.Error, statsLog, Logger.Level.Info);
+
+                JsonSerializerOptions manifestOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                List<RunRecord> statsRecords = JsonSerializer.Deserialize<List<RunRecord>>(
+                    File.ReadAllText(manifestPath), manifestOpts)
+                    ?? throw new InvalidOperationException("Failed to deserialise manifest.json");
+
+                statsLogger.Info($"Loaded {statsRecords.Count} records from: {manifestPath}");
+
+                OutputWriter.WriteIdentityGroups(statsRecords, statsLogger);
+                if (statsRecords.Any(r => r.SectionCount > 0))
+                {
+                    OutputWriter.WriteSummaryCountsCsv(statsRecords, Path.Combine(runDir, "summary_counts.csv"));
+                    OutputWriter.WriteSummaryPctCsv(statsRecords, Path.Combine(runDir, "summary_pct.csv"));
+                    OutputWriter.WriteConsoleSummary(statsRecords, statsLogger);
+                    OutputWriter.WriteConsolePctSummary(statsRecords, statsLogger);
+                }
+
+                statsLogger.Info($"\nOutput written to: {Path.GetFullPath(runDir)}");
+                return 0;
+            }
+
             string projectDir;
             if (args.Length > 0)
             {

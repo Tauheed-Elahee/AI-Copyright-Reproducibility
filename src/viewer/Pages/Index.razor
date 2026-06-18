@@ -198,7 +198,8 @@ else if (_records != null)
             .GroupBy(r => r.Deployment)
             .Select(g =>
             {
-                var tokens = g
+                var ok = g.Where(r => r.Status == 200).ToList();
+                var tokens = ok
                     .Where(r => r.CompletionTokens.HasValue)
                     .Select(r => r.CompletionTokens!.Value)
                     .ToList();
@@ -208,16 +209,16 @@ else if (_records != null)
                 return new DeploymentStat(
                     g.Key,
                     g.Count(),
-                    g.Count(r => r.Status == 200),
+                    ok.Count,
                     g.Count(r => r.Error != null || r.Status != 200),
-                    (long)g.Average(r => r.DurationMs),
+                    ok.Count > 0 ? (long)ok.Average(r => r.DurationMs) : 0,
                     avgTokens);
             })
             .OrderBy(s => s.Deployment)
             .ToList();
 
         _allIdentityGroups = records
-            .Where(r => r.ContentSha256Short != null)
+            .Where(r => r.Status == 200 && r.ContentSha256Short != null)
             .GroupBy(r => r.ContentSha256Short!)
             .Select(g =>
             {

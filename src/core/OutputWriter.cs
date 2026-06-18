@@ -145,7 +145,7 @@ namespace AICopyrightReproducibility
             logger.Info(new string('-', 80));
             logger.Info("Distinct semantic hashes (identity groups):");
             IEnumerable<IGrouping<string?, RunRecord>> groups = records
-                .Where(r => r.SemanticSha256 is not null)
+                .Where(r => r.Status == 200 && r.SemanticSha256 is not null)
                 .GroupBy(r => r.SemanticSha256)
                 .OrderByDescending(g => g.Count());
             int gi = 0;
@@ -215,7 +215,7 @@ namespace AICopyrightReproducibility
         public static void WriteSummaryPctCsv(List<RunRecord> records, string path)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("text_label,query_label,deployment,n,n_ok%,n_err%," +
+            sb.AppendLine("text_label,query_label,deployment,n,n_ok,n_err,n_ok%,n_err%," +
                           "coverage_pct,li1_first_pct,order_pct_mean,title_hit_pct,textbook_hit_pct," +
                           "list_logprob_geomean_pct,list_logprob_arith_pct," +
                           "list_logprob_median_geomean_pct,list_logprob_median_arith_pct," +
@@ -259,6 +259,8 @@ namespace AICopyrightReproducibility
                 {
                     Csv(g.Key.TextLabel), Csv(g.Key.QueryLabel), Csv(g.Key.Deployment),
                     rs.Count.ToString(CultureInfo.InvariantCulture),
+                    nOk.ToString(CultureInfo.InvariantCulture),
+                    nErr.ToString(CultureInfo.InvariantCulture),
                     nOkPct, nErrPct,
                     covPct, li1Pct, orderPct, titlePct, tbPct,
                     lpmGeo, lpmArith, lpmMedGeo, lpmMedArith,
