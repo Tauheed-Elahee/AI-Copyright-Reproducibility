@@ -1,0 +1,4 @@
+deployment,set,text_label,query_label,list_task,order_task,index,timestamp_utc,status,duration_ms,retry_count,model,system_fingerprint,response_id,created,prompt_tokens,completion_tokens,total_tokens,finish_reason,content_sha256,content_sha256_short,semantic_sha256,semantic_sha256_short,raw_file,list_count,exact_matches,coverage,hallucinations,li1_first,position_score,min_moves,order_pct,title_hit,textbook_hit,list_logprob_mean,list_logprob_median,list_logprob_mode,title_logprob,error
+example-deployment,1,example_text,example_query,0,0,1,2026-06-17T20:11:01.4557331Z,404,316,0,,,,,,,,,,,,,set01_rep01_example_query_example-deployment.json,0,0,0,0,0,,,,0,0,,,,,"Service request failed.
+Status: 404 (Not Found)
+ | parse: The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true. LineNumber: 0 | BytePositionInLine: 0."

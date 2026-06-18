@@ -1,0 +1,2 @@
+text_label,query_label,deployment,n,n_ok%,n_err%,coverage_pct,li1_first_pct,order_pct_mean,title_hit_pct,textbook_hit_pct,list_logprob_geomean_pct,list_logprob_arith_pct,list_logprob_median_geomean_pct,list_logprob_median_arith_pct,title_logprob_geomean_pct,title_logprob_arith_pct
+example_text,example_query,example-deployment,1,0.0,100.0,,,,,,,,,,,

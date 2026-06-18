@@ -1,0 +1,100 @@
+{
+  "locations": {
+    "config": {
+      "dir": "config",
+      "files": {
+        "experiment": "experiment.json",
+        "queries": null,
+        "texts": null,
+        "prompts": null,
+        "deployments": "deployments.json"
+      }
+    },
+    "input": {
+      "dir": "input",
+      "files": {
+        "experiment": null,
+        "queries": "queries.json",
+        "texts": "text.json",
+        "prompts": "prompts.json",
+        "deployments": null
+      }
+    },
+    "output": {
+      "dir": "output",
+      "files": null
+    },
+    "log": {
+      "dir": "log",
+      "files": null
+    }
+  },
+  "experiment": {
+    "iterations": {
+      "set": 1,
+      "rep": 1
+    },
+    "omit_null_fields": true,
+    "parallel": {
+      "max_concurrency": 0,
+      "level": {
+        "deployment": false,
+        "rep": false,
+        "prompt": false
+      }
+    },
+    "retry": {
+      "max_attempts": 3,
+      "initial_delay_s": 1,
+      "max_delay_s": 60
+    },
+    "timing": {
+      "pause": {
+        "run": {
+          "set": 0,
+          "prompt": 0,
+          "rep": 0,
+          "deployment": 0
+        }
+      }
+    },
+    "seed": {
+      "shuffle": {
+        "run": {
+          "prompt": 0,
+          "deployment": 0
+        },
+        "content": 0
+      }
+    },
+    "captured_utc": "2026-06-17T20:10:46.0743893Z"
+  },
+  "queries": [
+    {
+      "label": "example_query",
+      "types": [],
+      "system_message": "",
+      "user_prompt": "What is {title}?"
+    }
+  ],
+  "deployments": [
+    {
+      "label": "example-deployment",
+      "mode": "standard_open_ai",
+      "connection": {
+        "endpoint": "https://api.example.com",
+        "api_key": "${openai_api_key}",
+        "token_scope": null,
+        "deployment": null,
+        "api_version_override": null,
+        "agent": null
+      },
+      "parameters": {
+        "temperature": 0.0,
+        "max_completion_tokens": 1024,
+        "stream": false
+      },
+      "unsupported_parameters": {}
+    }
+  ]
+}
