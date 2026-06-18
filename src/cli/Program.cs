@@ -51,6 +51,13 @@ namespace AICopyrightReproducibility
                 CustomParser = ParseDestinations
             };
 
+            var lockDestArg = new Argument<DirectoryInfo[]>("destination")
+            {
+                Description = "One or more project directories to lock.",
+                Arity = ArgumentArity.OneOrMore,
+                CustomParser = ParseDestinations
+            };
+
             var summaryCommand = new Command("summary",
                 "Regenerate manifest.csv and summary CSVs from an existing manifest.json.")
             {
@@ -75,13 +82,20 @@ namespace AICopyrightReproducibility
                 createDestArg
             };
 
+            var lockCommand = new Command("lock",
+                "Lock a project to prevent further runs (sets edition.read_only = true).")
+            {
+                lockDestArg
+            };
+
             var rootCommand = new RootCommand(
                 "Run a copyright reproducibility experiment and generate summary statistics.")
             {
                 projectDirArg,
                 generateCommand,
                 runCommand,
-                createCommand
+                createCommand,
+                lockCommand
             };
 
             rootCommand.SetAction(async (ParseResult pr) =>
@@ -105,6 +119,16 @@ namespace AICopyrightReproducibility
                 foreach (var dir in pr.GetValue(createDestArg)!)
                 {
                     int code = await RunCreate(dir);
+                    if (code != 0) return code;
+                }
+                return 0;
+            });
+
+            lockCommand.SetAction((ParseResult pr) =>
+            {
+                foreach (var dir in pr.GetValue(lockDestArg)!)
+                {
+                    int code = RunLock(dir);
                     if (code != 0) return code;
                 }
                 return 0;
@@ -650,6 +674,52 @@ namespace AICopyrightReproducibility
               ]
             }
             """;
+
+        private static int RunLock(DirectoryInfo destination)
+        {
+            string projectPath = Path.Combine(destination.FullName, "project.json");
+            if (!File.Exists(projectPath))
+            {
+                Console.Error.WriteLine($"project.json not found in: {destination.FullName}");
+                return 1;
+            }
+
+            JsonSerializerOptions readOpts = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy        = JsonNamingPolicy.SnakeCaseLower,
+                PropertyNameCaseInsensitive = true,
+                Converters =
+                {
+                    new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+                    new SemanticVersionJsonConverter()
+                }
+            };
+
+            RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
+                File.ReadAllText(projectPath), readOpts)
+                ?? throw new InvalidOperationException("Failed to deserialise project.json");
+
+            if (cfg.Project.Edition is null)
+                cfg.Project.Edition = new EditionConfig { Number = 0, Date = DateOnly.FromDateTime(DateTime.UtcNow) };
+            cfg.Project.Edition.ReadOnly = true;
+
+            JsonSerializerOptions writeOpts = new JsonSerializerOptions
+            {
+                WriteIndented          = true,
+                PropertyNamingPolicy   = JsonNamingPolicy.SnakeCaseLower,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Converters =
+                {
+                    new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+                    new SemanticVersionJsonConverter()
+                }
+            };
+
+            File.WriteAllText(projectPath,
+                JsonSerializer.Serialize(new { project = cfg.Project }, writeOpts));
+            Console.WriteLine($"Locked: {projectPath}");
+            return 0;
+        }
 
         private static SemanticVersion GetHarnessVersion()
         {
