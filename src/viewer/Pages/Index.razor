@@ -16,6 +16,7 @@
         </button>
     </div>
     <nav class="side-nav">
+        <button class="side-btn" @onclick="GoHome">Home</button>
         <button class="side-btn" @onclick="ClearData">Clear</button>
         <label  class="side-btn" for="file-open">Open</label>
         <InputFile id="file-open" style="display:none" OnChange="@LoadFile" accept=".json" />
@@ -406,6 +407,14 @@ else
         {
             _loading = false;
         }
+    }
+
+    private void GoHome()
+    {
+        var url = _loadedExample is { Length: > 0 }
+            ? $"{Navigation.BaseUri}?example={_loadedExample}"
+            : Navigation.BaseUri;
+        Navigation.NavigateTo(url);
     }
 
     private void ClearData()
