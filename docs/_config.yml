@@ -1,5 +1,5 @@
 
-title:       AI-Copyright Reproducibility Harness
+title:       AI Reproducibility
 description: A reproducibility harness for LLM deployment testing across Azure AI Foundry and native APIs.
 url:         https://ai-copyright-reproducibility.tauheed-elahee.com
 baseurl:     ""

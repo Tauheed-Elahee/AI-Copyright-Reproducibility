@@ -267,7 +267,7 @@ It loads the committed `medical-texts.project` run by default and renders:
 
 To view a local run, use the **Load local manifest.json** button in the bottom bar and select any `manifest.json` from your `output/<timestamp>/` directory.
 
-The viewer is a static site built in CI from `src/viewer/` and deployed to `/viewer/` alongside the Jekyll documentation. To run it locally:
+The viewer is a static site built in CI from `src/viewer/` and deployed to `/viewer/` alongside the Jekyll documentation. The documentation page for the viewer is at [`/results-viewer/`](https://ai-copyright-reproducibility.tauheed-elahee.com/results-viewer/). To run it locally:
 
 ```bash
 dotnet run --project src/viewer/ --pathbase /viewer/
