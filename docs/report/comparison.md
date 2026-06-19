@@ -22,7 +22,7 @@ HTTP reliability differed sharply across deployments: only `deepseek-agent` had 
 | `gpt-oss-model` | 100% | 100% |
 | `gpt-oss-agent` | 100% | 100% |
 
-![Fig 1 — HTTP reliability by deployment]({{ site.baseurl }}/assets/report/fig1_reliability.png)
+[![Fig 1 — HTTP reliability by deployment]({{ site.baseurl }}/assets/report/fig1_reliability.png)](/viewer/charts?example=v0.9.0)
 
 *Mean HTTP success rate per deployment across all text–query combinations.*
 
@@ -43,7 +43,7 @@ Each deployment was prompted with the full title of each work and asked to retur
 | `gpt-oss-model` | 12.5% | 0% | 0.5% | 0% |
 | `gpt-oss-agent` | 10.5% | 0% | 0.4% | 0% |
 
-![Fig 2 — Recall coverage by deployment]({{ site.baseurl }}/assets/report/fig2_recall_coverage.png)
+[![Fig 2 — Recall coverage by deployment]({{ site.baseurl }}/assets/report/fig2_recall_coverage.png)](/viewer/charts?example=v0.9.0)
 
 *Mean coverage per deployment for each text.*
 
@@ -66,7 +66,7 @@ Deployments were shown the full table of contents of each work — with the titl
 | `gpt-oss-model` | 0% | 0% | 39.5% | 9.5% |
 | `gpt-oss-agent` | 0.5% | 1% | 46% | 39% |
 
-![Fig 3 — Source identification rate]({{ site.baseurl }}/assets/report/fig3_source_id.png)
+[![Fig 3 — Source identification rate]({{ site.baseurl }}/assets/report/fig3_source_id.png)](/viewer/overview?example=v0.9.0)
 
 *Fraction of runs with correct source identification, by deployment, text, and input order.*
 
@@ -91,11 +91,11 @@ Deployments were shown the headings of each table of contents in randomized orde
 | `gpt-oss-model` | 0% | 39.7% | 0% | 61.2% |
 | `gpt-oss-agent` | 0% | 37.5% | 0% | 65.2% |
 
-![Fig 4a — Ordering: % perfect]({{ site.baseurl }}/assets/report/fig4a_ordering_perfect.png)
+[![Fig 4a — Ordering: % perfect]({{ site.baseurl }}/assets/report/fig4a_ordering_perfect.png)](/viewer/charts?example=v0.9.0)
 
 *Fraction of runs with fully correct ordering per deployment.*
 
-![Fig 4b — Ordering: pairwise accuracy]({{ site.baseurl }}/assets/report/fig4b_ordering_accuracy.png)
+[![Fig 4b — Ordering: pairwise accuracy]({{ site.baseurl }}/assets/report/fig4b_ordering_accuracy.png)](/viewer/charts?example=v0.9.0)
 
 *Mean pairwise ordering accuracy per deployment.*
 
@@ -164,15 +164,15 @@ The ordering results reverse the book-level pattern. GPT-OSS achieves 44–60.5%
 
 The following figures show all query types and deployments together for each of the three texts. Each cell reports the primary metric for that query type: coverage (%) for recall tasks, title or textbook hit (%) for identification tasks, and perfect ordering (%) or pairwise order accuracy (%) for sequencing tasks.
 
-![Fig 5a — Overview: Toronto Notes 2022]({{ site.baseurl }}/assets/report/fig5a_overview_tn.png)
+[![Fig 5a — Overview: Toronto Notes 2022]({{ site.baseurl }}/assets/report/fig5a_overview_tn.png)](/viewer/overview?example=v0.9.0)
 
 *Fig 5a — All query types × all deployments for Toronto Notes 2022.*
 
-![Fig 5b — Overview: Bates' Guide 13e]({{ site.baseurl }}/assets/report/fig5b_overview_bates.png)
+[![Fig 5b — Overview: Bates' Guide 13e]({{ site.baseurl }}/assets/report/fig5b_overview_bates.png)](/viewer/overview?example=v0.9.0)
 
 *Fig 5b — All query types × all deployments for Bates' Guide 13e.*
 
-![Fig 5c — Overview: Bates' Guide Ch. 11]({{ site.baseurl }}/assets/report/fig5c_overview_ch11.png)
+[![Fig 5c — Overview: Bates' Guide Ch. 11]({{ site.baseurl }}/assets/report/fig5c_overview_ch11.png)](/viewer/overview?example=v0.9.0)
 
 *Fig 5c — All query types × all deployments for Bates' Guide Ch. 11.*
 

@@ -13,7 +13,7 @@ Results across all six deployments, three texts, and eleven query types are repo
 
 All deployments except `deepseek-agent` completed every request successfully across all query types. `deepseek-agent` failed 23.5–32.5% of requests depending on query type; all statistics for that deployment are computed over successful responses only.
 
-![Fig 1 — HTTP reliability by deployment]({{ site.baseurl }}/assets/report/fig1_reliability.png)
+[![Fig 1 — HTTP reliability by deployment]({{ site.baseurl }}/assets/report/fig1_reliability.png)](/viewer/charts?example=v0.9.0)
 
 *Mean HTTP success rate per deployment across all text–query combinations.*
 
@@ -23,7 +23,7 @@ Each deployment was prompted with the full title of *Toronto Notes 2022* and ask
 
 No run across any deployment returned all headings: the perfect recall rate was 0% for all deployments and texts. The DeepSeek result constitutes near-verbatim structural recall from training weights, with no retrieval tools available; the zero perfect-recall rate indicates that the model consistently omits one or more headings per run even when mean coverage is high.
 
-![Fig 2 — Recall coverage by deployment]({{ site.baseurl }}/assets/report/fig2_recall_coverage.png)
+[![Fig 2 — Recall coverage by deployment]({{ site.baseurl }}/assets/report/fig2_recall_coverage.png)](/viewer/charts?example=v0.9.0)
 
 *Mean fraction of reference headings present in output (coverage) per deployment, for Toronto Notes 2022 and Bates' Guide 13e.*
 

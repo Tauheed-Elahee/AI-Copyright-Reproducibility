@@ -23,7 +23,7 @@ All deployments except `deepseek-agent` completed every request successfully; `d
 
 ---
 
-> **Interactive charts:** The [Results Viewer](/viewer/?example=v0.9.0) reproduces all figures from this report as interactive charts. Use the **Charts** and **Overview** tabs after loading the v0.9.0 example.
+> **Interactive charts:** The [Results Viewer](/viewer/charts?example=v0.9.0) opens directly on the Charts tab. Switch to the **Overview** tab to see the full heatmap grids.
 
 ---
 
