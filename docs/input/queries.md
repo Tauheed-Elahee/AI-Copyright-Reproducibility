@@ -29,8 +29,8 @@ An array of query templates. Each defines a system message, a user prompt, and t
 
 | Type string | Scoring behaviour |
 |-------------|------------------|
-| `"list_task"` | Response is parsed for bulleted list items (`- …`). Scored for exact matches, coverage, hallucinations, and first-item accuracy (`li1_first`). |
-| `"order_task"` | Requires `"list_task"`. Additionally scores position accuracy (`position_score`), minimum relocations (`min_moves`), and order percentage (`order_pct`). |
-| *(empty array)* | Title-recall task. Scored only for `title_hit` and `textbook_hit`. |
+| `"list_task"` | Response is parsed for bulleted list items (`- …`). Scored for [exact matches](/glossary/#exact-match), [coverage](/glossary/#coverage), [hallucinations](/glossary/#hallucination), and first-item accuracy (`li1_first`). |
+| `"order_task"` | Requires `"list_task"`. Additionally scores [position accuracy](/glossary/#position-score) (`position_score`), [minimum relocations](/glossary/#min-moves) (`min_moves`), and order percentage (`order_pct`). |
+| *(empty array)* | [Title recall](/glossary/#title-recall) task. Scored only for `title_hit` and `textbook_hit`. |
 
 Unknown strings in `types` are silently ignored. A query can combine `list_task` and `order_task` to test both list completeness and ordering simultaneously.

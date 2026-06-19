@@ -26,3 +26,16 @@ Built to support the [Clinical-AI Reproducibility Annex](https://github.com/Tauh
 ## Browse results
 
 The [Results viewer](results-viewer) is hosted at [ai-copyright-reproducibility.tauheed-elahee.com/viewer/](https://ai-copyright-reproducibility.tauheed-elahee.com/viewer/).
+
+## Sections
+
+| Section | What's inside |
+|---------|---------------|
+| [Getting Started](getting-started) | Download binaries, build from source, run your first experiment |
+| [Project layout](project-layout) | Directory structure, configuration files, and deployment modes |
+| [Input](input) | `text.json`, `queries.json`, `prompts.json` — what to ask and who to ask it to |
+| [Running](running) | CLI reference, helper scripts, and troubleshooting |
+| [Output](output) | Output files, manifest columns, scoring algorithm, and interpreting results |
+| [Results viewer](results-viewer) | Hosted Blazor viewer — load local or default manifests |
+| [Methodology](methodology) | Hashing rationale, `system_fingerprint` drift, identity groups |
+| [Glossary](glossary) | Definitions for every key term |

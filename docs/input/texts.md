@@ -38,4 +38,4 @@ The text library is an array of entries. Each entry defines one piece of source 
 | `content.section_headings` | List of expected section or chapter headings — used to score list task responses |
 | `content.aliases` | Alternative names used for fuzzy title matching |
 
-`section_headings` is the ground truth for list tasks: the harness measures how many headings the model reproduces, how many are hallucinated, and whether the first item is correct.
+`section_headings` is the ground truth for [list tasks](/glossary/#list-task): the harness measures how many headings the model reproduces ([coverage](/glossary/#coverage)), how many are [hallucinated](/glossary/#hallucination), and whether the first item is correct.

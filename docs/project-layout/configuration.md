@@ -43,7 +43,7 @@ Both log files always receive all levels regardless of `log_level`.
 
 ## deployments.json
 
-Array of deployment "arms" — the LLM endpoints to test in parallel.
+Array of [deployment arms](/glossary/#deployment-arm) — the LLM endpoints to test in parallel.
 
 Each entry specifies:
 
@@ -64,3 +64,45 @@ These two files are always gitignored. Copy from the committed templates and fil
 **secrets.json** — API key values only. Goes through a secrets manager, never shared in plain text.
 
 Azure deployments using `DefaultAzureCredential` do not need `secrets.json` — authentication is handled by `az login`.
+
+**endpoints.json** example:
+
+```json
+{
+  "endpoints": {
+    "my_endpoint": {
+      "url": "https://example.com/api",
+      "auth": { "type": "api_key", "key": "my_key", "header": "Authorization", "scheme": "Bearer" },
+      "fields": []
+    }
+  }
+}
+```
+
+**secrets.json** example (the key name must match the `key` value in `endpoints.json`):
+
+```json
+{
+  "keys": {
+    "my_key": "sk-..."
+  }
+}
+```
+
+## Deployment modes
+
+The `mode` field in each `deployments.json` entry controls which executor is used.
+
+| Mode | Use when |
+|------|----------|
+| `StandardOpenAI` | Any OpenAI-compatible API — OpenAI, Anthropic, Mistral, local servers |
+| `AzureModeApi` | Azure OpenAI via Azure AI Foundry (ChatCompletions API) |
+| `AzureAgentApi` | Azure Agent API — requires an Agent deployment, not a ChatCompletions deployment |
+
+**`StandardOpenAI`** — authenticates via API key from `secrets.json`. The model is set through `parameters["model"]`. The endpoint URL comes from `endpoints.json`. Use this for any OpenAI-compatible provider.
+
+**`AzureModeApi`** — authenticates via `DefaultAzureCredential` (run `az login` first). Requires a `deployment` field in the connection config pointing to the Azure deployment name. Internally wraps the same request format as `StandardOpenAI`.
+
+**`AzureAgentApi`** — authenticates via `DefaultAzureCredential`. Uses the Azure Agent API request/response format rather than ChatCompletions. Response content is extracted from `output[].content[].text` rather than `choices[].message.content`.
+
+Both Azure modes (`AzureModeApi` and `AzureAgentApi`) will fail at startup with a credential error if `az login` has not been run or the credential has expired ([DefaultAzureCredential](/glossary/#defaultazurecredential)). See [Troubleshooting](/running/troubleshooting/) for auth error resolution steps.

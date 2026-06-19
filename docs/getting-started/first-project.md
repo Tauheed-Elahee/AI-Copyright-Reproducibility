@@ -48,9 +48,9 @@ Copy `config/secrets.template.json` to `config/secrets.json` and fill in your AP
 ## 4. Edit deployments and inputs
 
 - `config/deployments.json` — add or adjust the model deployment arms to test
-- `input/text.json` — the text corpus
-- `input/queries.json` — query templates
-- `input/prompts.json` — bindings between texts and queries
+- [`input/text.json`](/input/texts/) — the text corpus and ground truth section headings
+- [`input/queries.json`](/input/queries/) — query templates and task types
+- [`input/prompts.json`](/input/prompts/) — bindings between texts and queries
 
 ## 5. Run
 
@@ -59,3 +59,11 @@ aicr run my-study.project/
 ```
 
 Output lands in `my-study.project/output/<timestamp>/`. See [Output](/output/) for details.
+
+## 6. What to expect
+
+While running, `aicr` prints a progress line per request showing the deployment, set, and rep. At the end of each run it prints an [identity groups](/glossary/#identity-group) summary — responses grouped by content hash — and the total elapsed time.
+
+If a request fails mid-run (network error, auth expiry), the error is logged and `aicr` continues with the remaining requests. The partial output directory is preserved as-is; re-running creates a new timestamped directory alongside it.
+
+See [Troubleshooting](/running/troubleshooting/) if you encounter auth errors or repeated failures.

@@ -18,7 +18,7 @@ It loads the committed `medical-texts.project` run by default.
 
 **By Deployment tab** — per-deployment rollup: call count, success, perfect runs, errors, average duration, and average completion tokens. Separate counts and percentages tables.
 
-**Identity groups** — responses grouped by content SHA-256, showing which deployments independently produced identical output across runs.
+**[Identity groups](/glossary/#identity-group)** — responses grouped by [content SHA-256](/glossary/#content-sha256), showing which deployments independently produced identical output across runs.
 
 ## Load a local manifest
 

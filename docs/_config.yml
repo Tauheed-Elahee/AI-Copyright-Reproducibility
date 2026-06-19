@@ -5,6 +5,8 @@ url:         https://ai-copyright-reproducibility.tauheed-elahee.com
 baseurl:     ""
 
 theme: just-the-docs
+color_scheme: light
+enable_copy_code_button: true
 
 aux_links:
   GitHub:
