@@ -18,6 +18,8 @@ src/viewer/obj/
 
 # Jekyll
 docs/Gemfile.lock
+docs/.bundle/
+docs/vendor/
 _site/
 
 # Internal session docs
