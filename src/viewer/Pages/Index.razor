@@ -77,6 +77,10 @@ else if (_records != null)
                 @onclick='() => _activeTab = "deployment"'>By Deployment</button>
         <button class="tab-btn @(_activeTab == "identity"   ? "active" : "")"
                 @onclick='() => _activeTab = "identity"'>Identity Groups</button>
+        <button class="tab-btn @(_activeTab == "charts"     ? "active" : "")"
+                @onclick='() => _activeTab = "charts"'>Charts</button>
+        <button class="tab-btn @(_activeTab == "overview"   ? "active" : "")"
+                @onclick='() => _activeTab = "overview"'>Overview</button>
     </div>
 
     @if (_activeTab == "summary")
@@ -254,7 +258,7 @@ else if (_records != null)
         </table>
     </section>
     }
-    else
+    else if (_activeTab == "identity")
     {
     <section>
         <h2>Identity Groups</h2>
@@ -289,6 +293,139 @@ else if (_records != null)
                 }
             </tbody>
         </table>
+    </section>
+    }
+    else if (_activeTab == "charts")
+    {
+    <div class="chart-grid">
+        <figure class="chart-figure">
+            <ApexChart TItem="BarPoint" Options="@_fig1Opts" Title="Fig 1 — HTTP Reliability (mean n_ok%)">
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetFig1Data()"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+            </ApexChart>
+            <figcaption>Mean HTTP success rate per deployment across all text–query combinations.</figcaption>
+        </figure>
+        <figure class="chart-figure">
+            <ApexChart TItem="BarPoint" Options="@_fig2Opts" Title="Fig 2 — Recall Coverage (title→TOC)">
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetBarData("toronto-notes-2022","title_to_toc",r=>r.CovPct)"
+                    Name="TN 2022"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetBarData("bates-guide-13e","title_to_toc",r=>r.CovPct)"
+                    Name="Bates 13e"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+            </ApexChart>
+            <figcaption>Mean coverage % when asked to list the table of contents from the title alone.</figcaption>
+        </figure>
+        <figure class="chart-figure">
+            <ApexChart TItem="BarPoint" Options="@_fig4aOpts" Title="Fig 4a — Ordering: Perfect (shuffled→order)">
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetBarData("toronto-notes-2022","shuffled_toc_to_order",r=>r.PerfPct)"
+                    Name="TN 2022"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetBarData("bates-guide-13e","shuffled_toc_to_order_us",r=>r.PerfPct)"
+                    Name="Bates 13e"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+            </ApexChart>
+            <figcaption>% of runs with perfect pairwise ordering when given a shuffled TOC.</figcaption>
+        </figure>
+        <figure class="chart-figure">
+            <ApexChart TItem="BarPoint" Options="@_fig4bOpts" Title="Fig 4b — Ordering: Pairwise Accuracy">
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetBarData("toronto-notes-2022","shuffled_toc_to_order",r=>r.OrderPctMean)"
+                    Name="TN 2022"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+                <ApexPointSeries TItem="BarPoint"
+                    Items="@GetBarData("bates-guide-13e","shuffled_toc_to_order_us",r=>r.OrderPctMean)"
+                    Name="Bates 13e"
+                    SeriesType="SeriesType.Bar"
+                    XValue="@(e => e.Label)"
+                    YValue="@(e => (decimal)e.Value)" />
+            </ApexChart>
+            <figcaption>Mean pairwise order accuracy % across runs with a shuffled TOC.</figcaption>
+        </figure>
+    </div>
+    }
+    else if (_activeTab == "overview")
+    {
+    <section>
+        <h2>Fig 3 — Source Identification</h2>
+        <figure class="chart-figure">
+            <ApexChart TItem="HeatCell" Options="@_heatOpts" Title="Source ID (title hit %)">
+                @for (int di = 0; di < DeployOrder.Length; di++)
+                {
+                    <ApexPointSeries TItem="HeatCell"
+                        Items="@GetFig3Cells(DeployOrder[di])"
+                        Name="@DeployLabels[di]"
+                        SeriesType="SeriesType.Heatmap"
+                        XValue="@(e => e.ColLabel)"
+                        YValue="@(e => (decimal)e.Value)" />
+                }
+            </ApexChart>
+            <figcaption>Title / textbook hit % when shown the table of contents with the title withheld.</figcaption>
+        </figure>
+    </section>
+    <section>
+        <h2>Figs 5a / 5b / 5c — Overview Heatmaps</h2>
+        <div class="heatmap-row">
+            <figure class="chart-figure">
+                <ApexChart TItem="HeatCell" Options="@_heatOpts" Title="Fig 5a — Toronto Notes 2022">
+                    @for (int di = 0; di < DeployOrder.Length; di++)
+                    {
+                        <ApexPointSeries TItem="HeatCell"
+                            Items="@GetFig5aCells(DeployOrder[di])"
+                            Name="@DeployLabels[di]"
+                            SeriesType="SeriesType.Heatmap"
+                            XValue="@(e => e.ColLabel)"
+                            YValue="@(e => (decimal)e.Value)" />
+                    }
+                </ApexChart>
+                <figcaption>recall = cov%; rcl* = perfect%; id-ord/shuf = title hit%; ord-acc = pairwise%; ord* = perfect%</figcaption>
+            </figure>
+            <figure class="chart-figure">
+                <ApexChart TItem="HeatCell" Options="@_heatOpts" Title="Fig 5b — Bates 13e">
+                    @for (int di = 0; di < DeployOrder.Length; di++)
+                    {
+                        <ApexPointSeries TItem="HeatCell"
+                            Items="@GetFig5bCells(DeployOrder[di])"
+                            Name="@DeployLabels[di]"
+                            SeriesType="SeriesType.Heatmap"
+                            XValue="@(e => e.ColLabel)"
+                            YValue="@(e => (decimal)e.Value)" />
+                    }
+                </ApexChart>
+                <figcaption>Same column structure as 5a but for Bates Guide to Physical Examination 13e.</figcaption>
+            </figure>
+            <figure class="chart-figure">
+                <ApexChart TItem="HeatCell" Options="@_heatOpts" Title="Fig 5c — Bates Ch. 11">
+                    @for (int di = 0; di < DeployOrder.Length; di++)
+                    {
+                        <ApexPointSeries TItem="HeatCell"
+                            Items="@GetFig5cCells(DeployOrder[di])"
+                            Name="@DeployLabels[di]"
+                            SeriesType="SeriesType.Heatmap"
+                            XValue="@(e => e.ColLabel)"
+                            YValue="@(e => (decimal)e.Value)" />
+                    }
+                </ApexChart>
+                <figcaption>id-ord/shuf = textbook hit%; others match 5a/5b column definitions.</figcaption>
+            </figure>
+        </div>
     </section>
     }
 }
@@ -326,6 +463,22 @@ else
     private static readonly JsonSerializerOptions _jsonOpts =
         new() { PropertyNameCaseInsensitive = true };
 
+    private static readonly string[] DeployOrder =
+        ["deepseek-model","deepseek-agent","deepseek-native",
+         "deepseek-native-t1","gpt-oss-model","gpt-oss-agent"];
+    private static readonly string[] DeployLabels =
+        ["ds-model","ds-agent","ds-native","ds-native-t1","gpt-model","gpt-agent"];
+
+    private static readonly List<PlotOptionsHeatmapColorScaleRange> RdYlGn =
+    [
+        new() { From = 0,  To = 25,  Color = "#D7191C" },
+        new() { From = 25, To = 50,  Color = "#FDAE61" },
+        new() { From = 50, To = 75,  Color = "#FFFFBF" },
+        new() { From = 75, To = 101, Color = "#1A9641" },
+    ];
+
+    private Dictionary<(string Text, string Query, string Deploy), ChartRow> _chartLookup = new();
+
     private record DeploymentStat(
         string Deployment, int Total, int Success, int Perfect, int Errors,
         long AvgMs, string AvgTokens);
@@ -345,6 +498,12 @@ else
 
     private record IdentityGroup(
         string Hash, int Count, List<string> Deployments, string Label);
+
+    private record BarPoint(string Label, double Value);
+    private record HeatCell(string ColLabel, double Value);
+    private record ChartRow(
+        double NOkPct, double CovPct, double PerfPct,
+        double TitleHitPct, double TextbookHitPct, double OrderPctMean);
 
     [SupplyParameterFromQuery(Name = "example")]
     public string? ExampleVersion { get; set; }
@@ -421,6 +580,101 @@ else
         Navigation.NavigateTo(url);
     }
 
+    private double Pct(string text, string query, string deploy, Func<ChartRow, double> f)
+        => _chartLookup.TryGetValue((text, query, deploy), out var r) ? f(r) : 0.0;
+
+    // ── Chart options (instantiated once, referenced from markup) ──
+
+    private readonly ApexChartOptions<BarPoint> _fig1Opts = new()
+    {
+        Chart       = new Chart { Height = 280 },
+        PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { Horizontal = true, Distributed = true } },
+        Colors      = DeployOrder.Select(d => d == "deepseek-agent" ? "#CC4444" : "#6699CC").ToList(),
+        Legend      = new Legend { Show = false },
+        DataLabels  = new DataLabels { Enabled = true },
+    };
+
+    private readonly ApexChartOptions<BarPoint> _fig2Opts = new()
+    {
+        Chart  = new Chart { Height = 300 },
+        Colors = ["#4878CF", "#E8A838"],
+    };
+
+    private readonly ApexChartOptions<BarPoint> _fig4aOpts = new()
+    {
+        Chart  = new Chart { Height = 300 },
+        Colors = ["#4878CF", "#E8A838"],
+    };
+
+    private readonly ApexChartOptions<BarPoint> _fig4bOpts = new()
+    {
+        Chart  = new Chart { Height = 300 },
+        Colors = ["#4878CF", "#E8A838"],
+    };
+
+    private readonly ApexChartOptions<HeatCell> _heatOpts = new()
+    {
+        Chart      = new Chart { Height = 340 },
+        PlotOptions = new PlotOptions
+        {
+            Heatmap = new PlotOptionsHeatmap
+            {
+                ColorScale = new PlotOptionsHeatmapColorScale { Ranges = RdYlGn }
+            }
+        },
+        DataLabels = new DataLabels { Enabled = true },
+    };
+
+    // ── Chart data helpers ──
+
+    private List<BarPoint> GetFig1Data() =>
+        DeployOrder.Select((d, i) =>
+        {
+            var vals = _chartLookup.Where(kv => kv.Key.Deploy == d)
+                                    .Select(kv => kv.Value.NOkPct).ToList();
+            return new BarPoint(DeployLabels[i], vals.Count > 0 ? vals.Average() : 0);
+        }).ToList();
+
+    private List<BarPoint> GetBarData(string text, string query, Func<ChartRow, double> metric) =>
+        DeployLabels.Zip(DeployOrder, (lbl, dep) => new BarPoint(lbl, Pct(text, query, dep, metric))).ToList();
+
+    private List<HeatCell> GetFig3Cells(string deploy) =>
+    [
+        new("TN 2022",     Pct("toronto-notes-2022",   "toc_to_title",          deploy, r => r.TitleHitPct)),
+        new("Bates 13e",   Pct("bates-guide-13e",      "toc_to_title_us",       deploy, r => r.TitleHitPct)),
+        new("Bates Ch.11", Pct("bates-guide-13e-ch11", "sections_to_title_us",  deploy, r => r.TextbookHitPct)),
+    ];
+
+    private List<HeatCell> GetFig5aCells(string deploy) =>
+    [
+        new("recall",  Pct("toronto-notes-2022", "title_to_toc",          deploy, r => r.CovPct)),
+        new("rcl*",    Pct("toronto-notes-2022", "title_to_toc",          deploy, r => r.PerfPct)),
+        new("id-ord",  Pct("toronto-notes-2022", "toc_to_title",          deploy, r => r.PerfPct)),
+        new("id-shuf", Pct("toronto-notes-2022", "shuffled_toc_to_title", deploy, r => r.PerfPct)),
+        new("ord-acc", Pct("toronto-notes-2022", "shuffled_toc_to_order", deploy, r => r.OrderPctMean)),
+        new("ord*",    Pct("toronto-notes-2022", "shuffled_toc_to_order", deploy, r => r.PerfPct)),
+    ];
+
+    private List<HeatCell> GetFig5bCells(string deploy) =>
+    [
+        new("recall",  Pct("bates-guide-13e", "title_to_toc",               deploy, r => r.CovPct)),
+        new("rcl*",    Pct("bates-guide-13e", "title_to_toc",               deploy, r => r.PerfPct)),
+        new("id-ord",  Pct("bates-guide-13e", "toc_to_title_us",            deploy, r => r.PerfPct)),
+        new("id-shuf", Pct("bates-guide-13e", "shuffled_toc_to_title_us",   deploy, r => r.PerfPct)),
+        new("ord-acc", Pct("bates-guide-13e", "shuffled_toc_to_order_us",   deploy, r => r.OrderPctMean)),
+        new("ord*",    Pct("bates-guide-13e", "shuffled_toc_to_order_us",   deploy, r => r.PerfPct)),
+    ];
+
+    private List<HeatCell> GetFig5cCells(string deploy) =>
+    [
+        new("recall",  Pct("bates-guide-13e-ch11", "title_to_sections",             deploy, r => r.CovPct)),
+        new("rcl*",    Pct("bates-guide-13e-ch11", "title_to_sections",             deploy, r => r.PerfPct)),
+        new("id-ord",  Pct("bates-guide-13e-ch11", "sections_to_title_us",          deploy, r => r.TextbookHitPct)),
+        new("id-shuf", Pct("bates-guide-13e-ch11", "shuffled_sections_to_title_us", deploy, r => r.TextbookHitPct)),
+        new("ord-acc", Pct("bates-guide-13e-ch11", "shuffled_sections_to_order_us", deploy, r => r.OrderPctMean)),
+        new("ord*",    Pct("bates-guide-13e-ch11", "shuffled_sections_to_order_us", deploy, r => r.PerfPct)),
+    ];
+
     private void ClearData()
     {
         _records          = null;
@@ -439,6 +693,7 @@ else
         _totalGroups      = 0;
         _singletonCount   = 0;
         _showSingletons   = false;
+        _chartLookup      = new();
         Navigation.NavigateTo(Navigation.BaseUri);
     }
 
@@ -559,5 +814,34 @@ else
         _totalGroups    = _allIdentityGroups.Count;
         _singletonCount = _allIdentityGroups.Count(g => g.Count == 1);
         _identityGroups = _allIdentityGroups.Where(g => g.Count >= 2).ToList();
+
+        _chartLookup = records
+            .GroupBy(r => (r.TextLabel, r.QueryLabel, r.Deployment))
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    var ok       = g.Where(r => r.Status == 200).ToList();
+                    int nOk      = ok.Count;
+                    bool isList  = g.First().ListTask;
+                    bool isOrder = g.First().OrderTask;
+                    int sections = g.First().SectionCount;
+                    int perfCount = ok.Count(r =>
+                        (!r.ListTask  || (r.Coverage == r.SectionCount && r.Hallucinations == 0)) &&
+                        (!r.OrderTask || r.MinMoves == 0) &&
+                        (r.ListTask   || r.TitleHit));
+                    return new ChartRow(
+                        NOkPct:         g.Count() > 0 ? nOk * 100.0 / g.Count() : 0,
+                        CovPct:         isList && sections > 0 && nOk > 0
+                                            ? ok.Average(r => r.Coverage) / sections * 100 : 0,
+                        PerfPct:        nOk > 0 ? perfCount * 100.0 / nOk : 0,
+                        TitleHitPct:    !isList && nOk > 0
+                                            ? ok.Count(r => r.TitleHit)    * 100.0 / nOk : 0,
+                        TextbookHitPct: !isList && nOk > 0
+                                            ? ok.Count(r => r.TextbookHit) * 100.0 / nOk : 0,
+                        OrderPctMean:   isOrder && ok.Any(r => r.OrderPct.HasValue)
+                                            ? ok.Where(r => r.OrderPct.HasValue)
+                                                 .Average(r => r.OrderPct!.Value) : 0);
+                });
     }
 }

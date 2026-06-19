@@ -279,3 +279,31 @@ tr:hover td { background: #f5f6fa; }
     font-size: 0.85rem;
     font-family: 'Courier New', Courier, monospace;
 }
+
+/* ── Charts / Overview tabs ── */
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+.chart-figure {
+    background: #fff;
+    border: 1px solid #eeebee;
+    border-radius: 4px;
+    padding: 1rem;
+}
+.chart-figure figcaption {
+    font-size: 0.72rem;
+    color: #5c5962;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+}
+.heatmap-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    overflow-x: auto;
+    margin-bottom: 2rem;
+}
+.heatmap-row .chart-figure { flex: 1; min-width: 0; }
