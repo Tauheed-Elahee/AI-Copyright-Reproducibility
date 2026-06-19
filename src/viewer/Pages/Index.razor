@@ -1,11 +1,19 @@
 @page "/"
 @inject HttpClient Http
+@inject NavigationManager Navigation
 
 <PageTitle>Results Viewer</PageTitle>
 
-<div class="file-load-bar">
-    <span class="load-label">Load local manifest.json:</span>
-    <InputFile OnChange="@LoadFile" accept=".json" />
+<div class="action-bar">
+    <button class="action-btn" @onclick="ClearData">Clear</button>
+    <label class="action-btn" for="file-open">Open</label>
+    <InputFile id="file-open" style="display:none" OnChange="@LoadFile" accept=".json" />
+    <details class="action-dropdown">
+        <summary class="action-btn">Examples</summary>
+        <ul class="action-dropdown-menu">
+            <li><a href="?example=v0.9.0">v0.9.0</a></li>
+        </ul>
+    </details>
     @if (_loadedFromFile)
     {
         <span class="loaded-badge">local file loaded</span>
@@ -381,6 +389,27 @@ else
         {
             _loading = false;
         }
+    }
+
+    private void ClearData()
+    {
+        _records          = null;
+        _error            = null;
+        _loading          = false;
+        _loadedFromFile   = false;
+        _loadedExample    = null;
+        _runLabel         = "";
+        _deployments      = new();
+        _successCount     = 0;
+        _errorCount       = 0;
+        _summaryRows      = new();
+        _deploymentStats  = new();
+        _identityGroups   = new();
+        _allIdentityGroups = new();
+        _totalGroups      = 0;
+        _singletonCount   = 0;
+        _showSingletons   = false;
+        Navigation.NavigateTo("/");
     }
 
     private void ProcessRecords(List<RunRecord> records)
