@@ -12,5 +12,12 @@
         <p style="padding:2rem;font-family:monospace;color:#888">Loading&hellip;</p>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('details[open]').forEach(function (d) {
+                if (!d.contains(e.target)) d.removeAttribute('open');
+            });
+        });
+    </script>
 </body>
 </html>
