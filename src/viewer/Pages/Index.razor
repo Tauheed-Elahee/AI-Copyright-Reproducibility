@@ -8,7 +8,7 @@
     <div class="side-bar-header">
         @if (!_sidebarCollapsed)
         {
-            <span class="side-title">Viewer</span>
+            <span class="side-title">Results Viewer</span>
         }
         <button class="side-toggle" title="@(_sidebarCollapsed ? "Expand" : "Collapse")"
                 @onclick="() => _sidebarCollapsed = !_sidebarCollapsed">
@@ -29,6 +29,7 @@
         {
             <span class="loaded-badge sidebar-badge">local file loaded</span>
         }
+        <a class="side-btn side-docs-link" href="/" target="_top">Documentation</a>
     </nav>
 </aside>
 <div class="content-area">
