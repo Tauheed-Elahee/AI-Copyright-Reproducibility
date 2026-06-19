@@ -28,19 +28,19 @@ jobs:
         include:
           - rid: linux-x64
             os: ubuntu-latest
-            binary: harness
+            binary: aicr
           - rid: linux-arm64
             os: ubuntu-latest
-            binary: harness
+            binary: aicr
           - rid: osx-x64
             os: macos-latest
-            binary: harness
+            binary: aicr
           - rid: osx-arm64
             os: macos-latest
-            binary: harness
+            binary: aicr
           - rid: win-x64
             os: windows-latest
-            binary: harness.exe
+            binary: aicr.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -56,13 +56,12 @@ jobs:
           -r ${{ matrix.rid }}
           --self-contained
           -p:PublishSingleFile=true
-          -p:AssemblyName=harness
           -o dist/${{ matrix.rid }}
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: harness-${{ matrix.rid }}
+          name: aicr-${{ matrix.rid }}
           path: dist/${{ matrix.rid }}/${{ matrix.binary }}
 
   release:
@@ -86,18 +85,18 @@ jobs:
       - name: Rename binaries with platform suffix
         run: |
           for rid in linux-x64 linux-arm64 osx-x64 osx-arm64; do
-            mv artifacts/harness-$rid/harness artifacts/harness-$rid/harness-$rid
+            mv artifacts/aicr-$rid/aicr artifacts/aicr-$rid/aicr-$rid
           done
-          mv artifacts/harness-win-x64/harness.exe artifacts/harness-win-x64/harness-win-x64.exe
+          mv artifacts/aicr-win-x64/aicr.exe artifacts/aicr-win-x64/aicr-win-x64.exe
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/harness-linux-x64/harness-linux-x64
-            artifacts/harness-linux-arm64/harness-linux-arm64
-            artifacts/harness-osx-x64/harness-osx-x64
-            artifacts/harness-osx-arm64/harness-osx-arm64
-            artifacts/harness-win-x64/harness-win-x64.exe
+            artifacts/aicr-linux-x64/aicr-linux-x64
+            artifacts/aicr-linux-arm64/aicr-linux-arm64
+            artifacts/aicr-osx-x64/aicr-osx-x64
+            artifacts/aicr-osx-arm64/aicr-osx-arm64
+            artifacts/aicr-win-x64/aicr-win-x64.exe
             artifacts/example.project.tar.gz
           generate_release_notes: true

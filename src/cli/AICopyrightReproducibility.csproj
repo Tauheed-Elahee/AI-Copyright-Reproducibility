@@ -8,8 +8,8 @@
     <RootNamespace>AICopyrightReproducibility</RootNamespace>
     <NoWarn>$(NoWarn);OPENAI001</NoWarn>
     <AssemblyName>aicr</AssemblyName>
-    <Version>0.8.0</Version>
-    <AssemblyVersion>0.8.0.0</AssemblyVersion>
+    <Version>0.9.0</Version>
+    <AssemblyVersion>0.9.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
