@@ -11,6 +11,15 @@
     <div id="app">
         <p style="padding:2rem;font-family:monospace;color:#888">Loading&hellip;</p>
     </div>
+    <script>
+        (function () {
+            var redirect = sessionStorage.getItem('spa-redirect');
+            if (redirect) {
+                sessionStorage.removeItem('spa-redirect');
+                window.history.replaceState(null, null, redirect);
+            }
+        })();
+    </script>
     <script src="_content/Blazor-ApexCharts/js/blazor-apexcharts.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>
