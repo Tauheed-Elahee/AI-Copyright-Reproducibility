@@ -4,21 +4,34 @@
 
 <PageTitle>Results Viewer</PageTitle>
 
-<div class="action-bar">
-    <button class="action-btn" @onclick="ClearData">Clear</button>
-    <label class="action-btn" for="file-open">Open</label>
-    <InputFile id="file-open" style="display:none" OnChange="@LoadFile" accept=".json" />
-    <details class="action-dropdown">
-        <summary class="action-btn">Examples</summary>
-        <ul class="action-dropdown-menu">
-            <li><a href="?example=v0.9.0">v0.9.0</a></li>
-        </ul>
-    </details>
-    @if (_loadedFromFile)
-    {
-        <span class="loaded-badge">local file loaded</span>
-    }
-</div>
+<aside class="side-bar @(_sidebarCollapsed ? "collapsed" : "")">
+    <div class="side-bar-header">
+        @if (!_sidebarCollapsed)
+        {
+            <span class="side-title">Viewer</span>
+        }
+        <button class="side-toggle" title="@(_sidebarCollapsed ? "Expand" : "Collapse")"
+                @onclick="() => _sidebarCollapsed = !_sidebarCollapsed">
+            @(_sidebarCollapsed ? "›" : "‹")
+        </button>
+    </div>
+    <nav class="side-nav">
+        <button class="side-btn" @onclick="ClearData">Clear</button>
+        <label  class="side-btn" for="file-open">Open</label>
+        <InputFile id="file-open" style="display:none" OnChange="@LoadFile" accept=".json" />
+        <details class="side-dropdown">
+            <summary class="side-btn">Examples</summary>
+            <ul class="side-dropdown-menu">
+                <li><a href="?example=v0.9.0">v0.9.0</a></li>
+            </ul>
+        </details>
+        @if (_loadedFromFile)
+        {
+            <span class="loaded-badge sidebar-badge">local file loaded</span>
+        }
+    </nav>
+</aside>
+<div class="content-area">
 
 @if (_loading)
 {
@@ -276,17 +289,20 @@ else if (_records != null)
 else
 {
     <div class="welcome-msg">
-        <p>Select an example from the <strong>Examples</strong> menu above,
-        or load a local <code>manifest.json</code> with the file picker below.</p>
+        <p>Select an example from the <strong>Examples</strong> menu in the sidebar,
+        or load a local <code>manifest.json</code> with <strong>Open</strong>.</p>
     </div>
 }
+
+</div>
 
 @code {
     private List<RunRecord>? _records;
     private string?          _error;
-    private bool             _loading       = false;
+    private bool             _loading          = false;
     private bool             _loadedFromFile;
     private string?          _loadedExample;
+    private bool             _sidebarCollapsed = false;
     private string           _runLabel      = "";
     private List<string>     _deployments   = new();
     private int              _successCount;
