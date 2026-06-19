@@ -1,2 +1,0 @@
-text_label,query_label,deployment,n,n_ok,n_err,exact_matches_mean,coverage_mean,hallucinations_mean,li1_first_count,position_score_mean,min_moves_mean,title_hit_count,textbook_hit_count,list_logprob_mean,list_logprob_median,title_logprob_mean
-example_text,example_query,example-deployment,1,0,1,,,,,,,0,0,,,
