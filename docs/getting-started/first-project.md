@@ -43,7 +43,7 @@ Copy `config/secrets.template.json` to `config/secrets.json` and fill in your AP
 }
 ```
 
-`secrets.json` is gitignored and should never be committed. For Azure deployments using `DefaultAzureCredential`, no `secrets.json` is needed — run `az login` once instead (see [Azure prerequisites](../running/cli#azure-prerequisites)).
+`secrets.json` is gitignored and should never be committed. For Azure deployments using `DefaultAzureCredential`, no `secrets.json` is needed — run `az login` once instead (see [Azure prerequisites](/running/cli/#azure-prerequisites)).
 
 ## 4. Edit deployments and inputs
 
@@ -58,4 +58,4 @@ Copy `config/secrets.template.json` to `config/secrets.json` and fill in your AP
 aicr run my-study.project/
 ```
 
-Output lands in `my-study.project/output/<timestamp>/`. See [Output](../output) for details.
+Output lands in `my-study.project/output/<timestamp>/`. See [Output](/output/) for details.

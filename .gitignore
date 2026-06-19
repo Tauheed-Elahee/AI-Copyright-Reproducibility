@@ -17,7 +17,6 @@ src/viewer/obj/
 !example.project/config/secrets.json
 
 # Jekyll
-docs/Gemfile.lock
 docs/.bundle/
 docs/vendor/
 _site/
