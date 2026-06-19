@@ -144,3 +144,54 @@ tr:hover td { background: #fafafa; }
 }
 .tab-btn:hover  { color: #222; }
 .tab-btn.active { color: #222; border-bottom-color: #334; font-weight: bold; }
+
+/* ── Header nav / Examples dropdown ── */
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.header-dropdown { position: relative; }
+.header-dropdown > summary {
+    list-style: none;
+    cursor: pointer;
+}
+.header-dropdown > summary::marker,
+.header-dropdown > summary::-webkit-details-marker { display: none; }
+
+.header-dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    background: #1a1a2e;
+    border: 1px solid #334466;
+    border-radius: 3px;
+    min-width: 7rem;
+    list-style: none;
+    padding: 0.25rem 0;
+    z-index: 200;
+}
+.header-dropdown-menu a {
+    display: block;
+    padding: 0.3rem 0.75rem;
+    color: #99b;
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+.header-dropdown-menu a:hover { background: #252545; color: #cce; }
+
+/* ── Welcome / empty state ── */
+.welcome-msg {
+    padding: 4rem 1.5rem;
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+.welcome-msg code {
+    background: #f0f4ff;
+    padding: 0.1rem 0.35rem;
+    border-radius: 2px;
+    font-size: 0.85rem;
+}

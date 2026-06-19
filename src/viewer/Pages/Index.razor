@@ -14,12 +14,12 @@
 
 @if (_loading)
 {
-    <p class="status-msg">Loading default run&hellip;</p>
+    <p class="status-msg">Loading&hellip;</p>
 }
 else if (_error != null && _records == null)
 {
     <div class="error-banner">@_error</div>
-    <p class="status-msg hint">Use the file picker above to load a local manifest.json.</p>
+    <p class="status-msg hint">Select an example from the Examples menu, or use the file picker below.</p>
 }
 else if (_records != null)
 {
@@ -265,12 +265,20 @@ else if (_records != null)
         </table>
     </section>
 }
+else
+{
+    <div class="welcome-msg">
+        <p>Select an example from the <strong>Examples</strong> menu above,
+        or load a local <code>manifest.json</code> with the file picker below.</p>
+    </div>
+}
 
 @code {
     private List<RunRecord>? _records;
     private string?          _error;
-    private bool             _loading       = true;
+    private bool             _loading       = false;
     private bool             _loadedFromFile;
+    private string?          _loadedExample;
     private string           _runLabel      = "";
     private List<string>     _deployments   = new();
     private int              _successCount;
@@ -308,16 +316,35 @@ else if (_records != null)
     private record IdentityGroup(
         string Hash, int Count, List<string> Deployments, string Label);
 
-    protected override async Task OnInitializedAsync()
+    [SupplyParameterFromQuery(Name = "example")]
+    public string? ExampleVersion { get; set; }
+
+    protected override async Task OnParametersSetAsync()
     {
+        if (ExampleVersion is { Length: > 0 } version && version != _loadedExample)
+        {
+            _loadedExample = version;
+            await LoadExample(version);
+        }
+    }
+
+    private async Task LoadExample(string version)
+    {
+        _loading        = true;
+        _error          = null;
+        _loadedFromFile = false;
+        StateHasChanged();
         try
         {
-            _records = await Http.GetFromJsonAsync<List<RunRecord>>("data/manifest.json", _jsonOpts);
+            _records = await Http.GetFromJsonAsync<List<RunRecord>>(
+                $"data/{version}/manifest.json", _jsonOpts);
             if (_records is { Count: > 0 }) ProcessRecords(_records);
+            else { _error = $"No records found in example {version}."; _records = null; }
         }
         catch (Exception ex)
         {
-            _error = $"Could not load default run: {ex.Message}";
+            _error   = $"Could not load example {version}: {ex.Message}";
+            _records = null;
         }
         finally
         {
