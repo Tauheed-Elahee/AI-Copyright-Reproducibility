@@ -1,0 +1,11 @@
+namespace AICopyrightReproducibility.Gui.ViewModels
+{
+    public sealed class DeploymentResultRow
+    {
+        public string Deployment    { get; init; } = "";
+        public int    SuccessCount  { get; init; }
+        public int    ErrorCount    { get; init; }
+        public double AvgDurationMs { get; init; }
+        public int    TotalRuns     => SuccessCount + ErrorCount;
+    }
+}

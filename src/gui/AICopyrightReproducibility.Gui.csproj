@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AICopyrightReproducibility.Gui</RootNamespace>
+    <AssemblyName>aicr-gui</AssemblyName>
+    <Version>0.9.0</Version>
+    <AssemblyVersion>0.9.0.0</AssemblyVersion>
+    <NoWarn>$(NoWarn);OPENAI001</NoWarn>
+    <AvaloniaUseCompiledBindings>true</AvaloniaUseCompiledBindings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia"                    Version="11.2.0" />
+    <PackageReference Include="Avalonia.Desktop"            Version="11.2.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent"      Version="11.2.0" />
+    <PackageReference Include="Avalonia.Controls.DataGrid"  Version="11.2.0" />
+    <PackageReference Include="Avalonia.ReactiveUI"         Version="11.2.0" />
+    <PackageReference Include="ReactiveUI"                  Version="20.1.1" />
+    <PackageReference Include="NuGet.Versioning"            Version="7.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../core/AICopyrightReproducibility.Core.csproj" />
+  </ItemGroup>
+
+</Project>

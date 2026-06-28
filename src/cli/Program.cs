@@ -5,15 +5,10 @@ using System.Reflection;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Azure.Identity;
 using AICopyrightReproducibility.Config;
-using AICopyrightReproducibility.Executors;
-using AICopyrightReproducibility.Executors.Azure;
-using AICopyrightReproducibility.Executors.Standard;
 using AICopyrightReproducibility.Utils;
 using NuGet.Versioning;
 
@@ -186,35 +181,24 @@ namespace AICopyrightReproducibility
                 return 1;
             }
 
-            JsonSerializerOptions readOpts = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy        = JsonNamingPolicy.SnakeCaseLower,
-                PropertyNameCaseInsensitive = true,
-                Converters =
-                {
-                    new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
-                    new SemanticVersionJsonConverter()
-                }
-            };
-            string configDir = projectDir;
-            string stamp     = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+            string stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
 
-            RunConfig cfg;
+            RunConfig cfgPreview;
             StreamWriter logWriter;
             try
             {
-                cfg = JsonSerializer.Deserialize<RunConfig>(
-                    File.ReadAllText(configPath), readOpts)
+                cfgPreview = JsonSerializer.Deserialize<RunConfig>(
+                    File.ReadAllText(configPath), ProjectLoader.ReadOpts)
                     ?? throw new InvalidOperationException("Failed to deserialise config.");
 
-                if (cfg.Project.Edition?.ReadOnly == true)
+                if (cfgPreview.Project.Edition?.ReadOnly == true)
                 {
                     Console.Error.WriteLine(
                         $"[ERROR] Project edition is marked read_only. Run aborted: {configPath}");
                     return 1;
                 }
 
-                string logDir = Path.Combine(configDir, cfg.Project.Fs.Log.Dir);
+                string logDir = Path.Combine(projectDir, cfgPreview.Project.Fs.Log.Dir);
                 Directory.CreateDirectory(logDir);
                 logWriter = new StreamWriter(
                     Path.Combine(logDir, $"aicr-{stamp}.log"), append: false) { AutoFlush = true };
@@ -242,155 +226,25 @@ namespace AICopyrightReproducibility
             logger.Info($"Loaded config : {configPath}");
 
             SemanticVersion harnessVersion = GetHarnessVersion();
-            if (cfg.Project.Version?.Compatible is { } compat
-                && harnessVersion.CompareTo(compat) < 0)
-            {
-                logger.Warn($"Project requires aicr >= {compat}; running with {harnessVersion}.");
-            }
-
-            static string AbsPath(string dir, string file) =>
-                Path.IsPathRooted(file) ? file : Path.Combine(dir, file);
-
-            static Logger.Level ParseLevel(string? s) => s?.ToLowerInvariant() switch
-            {
-                "verbose" => Logger.Level.Verbose,
-                "warning" => Logger.Level.Warning,
-                "error"   => Logger.Level.Error,
-                _         => Logger.Level.Info
-            };
 
             try
             {
-                string configLocDir = Path.Combine(configDir, cfg.Project.Fs.Config.Dir);
-
-                if (cfg.Project.Fs.Config.Files?.Experiment is { } experimentFile)
-                {
-                    string p = AbsPath(configLocDir, experimentFile);
-                    cfg.Experiment = JsonSerializer.Deserialize<ExperimentConfig>(
-                        File.ReadAllText(p), readOpts)
-                        ?? throw new InvalidOperationException("Failed to deserialise experiment config.");
-                    logger.SetLevel(ParseLevel(cfg.Experiment.LogLevel));
-                    logger.Info($"Loaded experiment: {p}");
-                }
-
-                string inputLocDir = Path.Combine(configDir, cfg.Project.Fs.Input.Dir);
-
-                Dictionary<string, QueryConfig> queriesDict = new();
-                if (cfg.Project.Fs.Input.Files?.Queries is { } queriesFile)
-                {
-                    string p = AbsPath(inputLocDir, queriesFile);
-                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                    cfg.Queries = doc.RootElement.GetProperty("queries")
-                        .EnumerateArray()
-                        .Select(e => JsonSerializer.Deserialize<QueryConfig>(e.GetRawText(), readOpts)!)
-                        .ToList();
-                    queriesDict = cfg.Queries.ToDictionary(q => q.Label);
-                    logger.Info($"Loaded queries: {p}");
-                }
-
-                if (cfg.Project.Fs.Config.Files?.Deployments is { } deploymentsFile)
-                {
-                    string p = AbsPath(configLocDir, deploymentsFile);
-                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                    cfg.Deployments = doc.RootElement.GetProperty("deployments")
-                        .EnumerateArray()
-                        .Select(e => JsonSerializer.Deserialize<DeploymentConfig>(e.GetRawText(), readOpts)!)
-                        .ToList();
-                    logger.Info($"Loaded deployments: {p}");
-                }
-
-                var textsDict = new Dictionary<string, TextEntry>(StringComparer.Ordinal);
-                if (cfg.Project.Fs.Input.Files?.Texts is { } textsFile)
-                {
-                    string p = AbsPath(inputLocDir, textsFile);
-                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                    foreach (TextDbEntry entry in doc.RootElement.GetProperty("texts")
-                        .EnumerateArray()
-                        .Select(e => JsonSerializer.Deserialize<TextDbEntry>(e.GetRawText(), readOpts)!))
-                    {
-                        var extras = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                        extras["full"]  = entry.Content.Title.Full;
-                        extras["short"] = entry.Content.Title.Short;
-                        if (entry.Content.Title.ExtraFields is not null)
-                            foreach (var (k, v) in entry.Content.Title.ExtraFields)
-                                FlattenJson(v, k, extras);
-                        textsDict[entry.Label] = new TextEntry(
-                            entry.Content.Title.Full,
-                            entry.Content.Title.Short,
-                            entry.Content.SectionHeadings,
-                            new Dictionary<string, string>(entry.Content.Aliases, StringComparer.OrdinalIgnoreCase),
-                            extras);
-                    }
-                    logger.Info($"Loaded texts  : {p}");
-                }
-
-                List<BoundPrompt> boundPrompts = new();
-                if (cfg.Project.Fs.Input.Files?.Prompts is { } promptsFile)
-                {
-                    string p = AbsPath(inputLocDir, promptsFile);
-                    using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(p));
-                    List<PromptEntry> prompts = doc.RootElement.GetProperty("prompts")
-                        .EnumerateArray()
-                        .Select(e => JsonSerializer.Deserialize<PromptEntry>(e.GetRawText(), readOpts)!)
-                        .ToList();
-                    boundPrompts = HarnessUtils.BindPrompts(queriesDict, textsDict, prompts);
-                    logger.Info($"Loaded prompts: {p}");
-                }
-
-                string outDir = Path.Combine(configDir, cfg.Project.Fs.Output.Dir, stamp);
-                Directory.CreateDirectory(outDir);
-
-                string endpointsPath = Path.Combine(configLocDir, "endpoints.json");
-                EndpointsConfig endpointsCfg = File.Exists(endpointsPath)
-                    ? JsonSerializer.Deserialize<EndpointsConfig>(
-                          File.ReadAllText(endpointsPath), readOpts) ?? new()
-                    : new();
-                logger.Info($"Loaded endpoints: {endpointsPath}");
-
-                string secretsPath = Path.Combine(configLocDir, "secrets.json");
-                SecretsConfig secretsCfg = File.Exists(secretsPath)
-                    ? JsonSerializer.Deserialize<SecretsConfig>(
-                          File.ReadAllText(secretsPath), readOpts) ?? new()
-                    : new();
-                logger.Info($"Loaded secrets: {secretsPath}");
-
-                bool needsAzure = cfg.Deployments.Any(d =>
-                    d.Mode is DeploymentMode.AzureModeApi or DeploymentMode.AzureAgentApi);
-                DefaultAzureCredential? credential = needsAzure ? new DefaultAzureCredential() : null;
-
-                bool needsHttpClient = cfg.Deployments.Any(d => d.Mode is DeploymentMode.AzureAgentApi);
-                using HttpClient? http = needsHttpClient ? new HttpClient() : null;
-
-                var resolvedConnections = new Dictionary<string, ResolvedConnectionConfig>();
-                Dictionary<string, IDeploymentExecutor> executors = cfg.Deployments.ToDictionary(
-                    d => d.Label,
-                    d =>
-                    {
-                        ResolvedConnectionConfig r = HarnessUtils.ResolveConnection(d.Connection, endpointsCfg, secretsCfg, d.Label);
-                        resolvedConnections[d.Label] = r;
-                        return d.Mode switch
-                        {
-                            DeploymentMode.AzureModeApi   => (IDeploymentExecutor)new AzureModeApi(r, credential!, logger),
-                            DeploymentMode.AzureAgentApi  => new AzureAgentApiExecutor(http!, credential!, r, logger),
-                            DeploymentMode.StandardOpenAI => new StandardOpenAIExecutor(r, d.Parameters, logger),
-                            _ => throw new InvalidOperationException($"Unknown deployment mode: {d.Mode}")
-                        };
-                    });
+                using LoadedProject loaded = ProjectLoader.Load(projectDir, logger, stamp, harnessVersion);
 
                 OutputWriter.WriteRunConfig(new RunSnapshot
                 {
                     CapturedUtc = DateTimeOffset.UtcNow,
                     Project     = new ProjectSnapshot
                     {
-                        Name   = cfg.Project.Name,
-                        Author = cfg.Project.Author,
-                        Date   = cfg.Project.Date
+                        Name   = loaded.Config.Project.Name,
+                        Author = loaded.Config.Project.Author,
+                        Date   = loaded.Config.Project.Date
                     },
-                    Experiment  = cfg.Experiment,
-                    Queries     = cfg.Queries,
-                    Deployments = cfg.Deployments.Select(d =>
+                    Experiment  = loaded.Config.Experiment,
+                    Queries     = loaded.Config.Queries,
+                    Deployments = loaded.Config.Deployments.Select(d =>
                     {
-                        ResolvedConnectionConfig r = resolvedConnections[d.Label];
+                        ResolvedConnectionConfig r = loaded.ResolvedConnections[d.Label];
                         return new DeploymentSnapshot
                         {
                             Label      = d.Label,
@@ -403,40 +257,41 @@ namespace AICopyrightReproducibility
                             Parameters = d.Parameters
                         };
                     }).ToList()
-                }, outDir);
+                }, loaded.OutDir);
 
-                logger.Info($"Deployments: {string.Join(", ", cfg.Deployments.Select(a => a.Label))}");
-                logger.Info($"Bound prompts: {boundPrompts.Count} ({string.Join(", ", boundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");
-                logger.Info($"Sets    : {cfg.Experiment.Iterations.Set}  Reps/set: {cfg.Experiment.Iterations.Rep}");
+                logger.Info($"Deployments: {string.Join(", ", loaded.Config.Deployments.Select(a => a.Label))}");
+                logger.Info($"Bound prompts: {loaded.BoundPrompts.Count} ({string.Join(", ", loaded.BoundPrompts.Select(b => $"{b.TextLabel}/{b.QueryLabel}"))})");
+                logger.Info($"Sets    : {loaded.Config.Experiment.Iterations.Set}  Reps/set: {loaded.Config.Experiment.Iterations.Rep}");
                 logger.Info(new string('-', 80));
 
-                using HarnessRunner runner = new HarnessRunner(cfg, boundPrompts, executors, outDir, logger);
+                using HarnessRunner runner = new HarnessRunner(
+                    loaded.Config, loaded.BoundPrompts, loaded.Executors, loaded.OutDir, logger);
                 List<RunRecord> records = await runner.RunAllAsync();
 
                 JsonSerializerOptions jsonOpts = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(Path.Combine(outDir, "manifest.json"),
+                File.WriteAllText(Path.Combine(loaded.OutDir, "manifest.json"),
                     JsonSerializer.Serialize(records, jsonOpts));
-                OutputWriter.WriteManifestCsv(records, Path.Combine(outDir, "manifest.csv"));
+                OutputWriter.WriteManifestCsv(records, Path.Combine(loaded.OutDir, "manifest.csv"));
 
                 OutputWriter.WriteIdentityGroups(records, logger);
                 if (records.Any(r => r.SectionCount > 0))
                 {
-                    OutputWriter.WriteSummaryCountsCsv(records, Path.Combine(outDir, "summary_counts.csv"));
-                    OutputWriter.WriteSummaryPctCsv(records, Path.Combine(outDir, "summary_pct.csv"));
+                    OutputWriter.WriteSummaryCountsCsv(records, Path.Combine(loaded.OutDir, "summary_counts.csv"));
+                    OutputWriter.WriteSummaryPctCsv(records, Path.Combine(loaded.OutDir, "summary_pct.csv"));
                     OutputWriter.WriteConsoleSummary(records, logger);
                     OutputWriter.WriteConsolePctSummary(records, logger);
                 }
 
-                logger.Info($"\nOutput written to: {Path.GetFullPath(outDir)}");
+                logger.Info($"\nOutput written to: {Path.GetFullPath(loaded.OutDir)}");
 
-                if (cfg.Project.Location != projectDir)
+                if (loaded.Config.Project.Location != projectDir)
                 {
-                    logger.Info($"Updated location: {cfg.Project.Location} -> {projectDir}");
-                    cfg.Project.Location = projectDir;
+                    logger.Info($"Updated location: {loaded.Config.Project.Location} -> {projectDir}");
+                    loaded.Config.Project.Location = projectDir;
                 }
-                if (cfg.Project.Version is null)
-                    cfg.Project.Version = new VersionConfig();
-                cfg.Project.Version.LastRun = harnessVersion;
+                if (loaded.Config.Project.Version is null)
+                    loaded.Config.Project.Version = new VersionConfig();
+                loaded.Config.Project.Version.LastRun = harnessVersion;
                 JsonSerializerOptions writeBackOpts = new JsonSerializerOptions
                 {
                     WriteIndented          = true,
@@ -449,7 +304,7 @@ namespace AICopyrightReproducibility
                     }
                 };
                 File.WriteAllText(configPath,
-                    JsonSerializer.Serialize(new { project = cfg.Project }, writeBackOpts));
+                    JsonSerializer.Serialize(new { project = loaded.Config.Project }, writeBackOpts));
                 logger.Info($"Updated last_run in: {configPath}");
 
                 return 0;
@@ -693,19 +548,8 @@ namespace AICopyrightReproducibility
                 return 1;
             }
 
-            JsonSerializerOptions readOpts = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy        = JsonNamingPolicy.SnakeCaseLower,
-                PropertyNameCaseInsensitive = true,
-                Converters =
-                {
-                    new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
-                    new SemanticVersionJsonConverter()
-                }
-            };
-
             RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
-                File.ReadAllText(projectPath), readOpts)
+                File.ReadAllText(projectPath), ProjectLoader.ReadOpts)
                 ?? throw new InvalidOperationException("Failed to deserialise project.json");
 
             if (cfg.Project.Edition is null)
@@ -738,21 +582,5 @@ namespace AICopyrightReproducibility
                 : new SemanticVersion(0, 0, 0);
         }
 
-        private static void FlattenJson(JsonElement element, string prefix, Dictionary<string, string> result)
-        {
-            switch (element.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    foreach (JsonProperty prop in element.EnumerateObject())
-                        FlattenJson(prop.Value, prefix + "." + prop.Name, result);
-                    break;
-                case JsonValueKind.String:
-                    result[prefix] = element.GetString() ?? "";
-                    break;
-                default:
-                    result[prefix] = element.GetRawText();
-                    break;
-            }
-        }
     }
 }

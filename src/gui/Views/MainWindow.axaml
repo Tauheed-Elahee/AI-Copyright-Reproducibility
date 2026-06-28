@@ -1,0 +1,278 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AICopyrightReproducibility.Gui.ViewModels"
+        x:DataType="vm:MainViewModel"
+        x:Class="AICopyrightReproducibility.Gui.Views.MainWindow"
+        Title="aicr — AI Copyright Reproducibility"
+        Width="1100" Height="750"
+        MinWidth="700" MinHeight="500">
+
+  <TabControl>
+
+    <!-- ── Tab 1: Run ─────────────────────────────────────────────────── -->
+    <TabItem Header="Run">
+      <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="12">
+
+        <!-- Row 0: Directory picker -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,8">
+          <TextBox Grid.Column="0"
+                   Text="{Binding ProjectDir}"
+                   Watermark="Select or type project directory path…" />
+          <Button Grid.Column="1"
+                  Content="Browse…"
+                  Command="{Binding BrowseCommand}"
+                  Margin="6,0,0,0" />
+          <Button Grid.Column="2"
+                  Content="Load Config"
+                  Command="{Binding LoadConfigCommand}"
+                  Margin="6,0,0,0" />
+        </Grid>
+
+        <!-- Row 1: Config summary (hidden until config loaded) -->
+        <Border Grid.Row="1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8"
+                IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Grid.Row="0"
+                       FontWeight="Bold" FontSize="14"
+                       Text="{Binding Summary.ProjectName}" />
+            <WrapPanel Grid.Row="1" Margin="0,4,0,0">
+              <TextBlock Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
+                         Margin="0,0,20,0"
+                         IsVisible="{Binding Summary.Author, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}"
+                         Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"
+                         Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"
+                         Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"
+                         Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}" />
+            </WrapPanel>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
+              <TextBlock Text="READ-ONLY — run not allowed"
+                         Foreground="OrangeRed" FontWeight="SemiBold"
+                         IsVisible="{Binding Summary.IsReadOnly}" />
+              <Button Content="Run Experiment"
+                      Command="{Binding RunCommand}"
+                      IsVisible="{Binding !Summary.IsReadOnly}" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Row 2: Live log panel -->
+        <Border Grid.Row="2"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1" CornerRadius="4" Margin="0,0,0,8">
+          <Grid RowDefinitions="Auto,*">
+            <TextBlock Grid.Row="0" Text="Log" FontWeight="SemiBold" Margin="6,4" />
+            <ScrollViewer Grid.Row="1" x:Name="LogScrollViewer"
+                          HorizontalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding LogLines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                               FontSize="11"
+                               TextWrapping="NoWrap" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+
+        <!-- Row 3: Progress bar (visible while running) -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto"
+              IsVisible="{Binding IsRunning}" Margin="0,0,0,4">
+          <ProgressBar Grid.Column="0"
+                       Minimum="0"
+                       Maximum="{Binding ProgressTotal}"
+                       Value="{Binding ProgressCompleted}" />
+          <TextBlock Grid.Column="1"
+                     Text="{Binding ProgressCompleted}"
+                     Margin="8,0,6,0" VerticalAlignment="Center" />
+          <Button Grid.Column="2"
+                  Content="Cancel"
+                  Command="{Binding CancelCommand}" />
+        </Grid>
+
+        <!-- Row 4: Current operation label (visible while running) -->
+        <TextBlock Grid.Row="4"
+                   Text="{Binding CurrentOperation}"
+                   FontSize="11"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   IsVisible="{Binding CurrentOperation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Margin="0,0,0,6" />
+
+        <!-- Row 5: Error message or results DataGrid -->
+        <Panel Grid.Row="5">
+          <TextBlock Text="{Binding ErrorMessage}"
+                     Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
+                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+          <StackPanel IsVisible="{Binding HasResults}">
+            <Button Content="Open output folder"
+                    Command="{Binding OpenOutputFolderCommand}"
+                    IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                    HorizontalAlignment="Left" Margin="0,0,0,6" />
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4">
+              <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Text="Results" FontWeight="SemiBold" Margin="6,4" />
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding Results}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          GridLinesVisibility="Horizontal"
+                          MaxHeight="220">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Deployment"
+                                        Binding="{Binding Deployment}" Width="*" />
+                    <DataGridTextColumn Header="Success"
+                                        Binding="{Binding SuccessCount}" Width="80" />
+                    <DataGridTextColumn Header="Errors"
+                                        Binding="{Binding ErrorCount}" Width="80" />
+                    <DataGridTextColumn Header="Total"
+                                        Binding="{Binding TotalRuns}" Width="70" />
+                    <DataGridTextColumn Header="Avg ms"
+                                        Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
+                  </DataGrid.Columns>
+                </DataGrid>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Panel>
+
+      </Grid>
+    </TabItem>
+
+    <!-- ── Tab 2: Settings ────────────────────────────────────────────── -->
+    <TabItem Header="Settings"
+             IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <ScrollViewer Margin="12" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel DataContext="{Binding Settings}" Spacing="12" x:CompileBindings="False">
+
+          <!-- Inline experiment note (shown when experiment is embedded in project.json) -->
+          <TextBlock Text="Experiment settings are embedded in project.json and cannot be edited here."
+                     Foreground="OrangeRed"
+                     IsVisible="{Binding !CanEdit}"
+                     TextWrapping="Wrap" />
+
+          <StackPanel IsVisible="{Binding CanEdit}">
+
+            <!-- Iterations -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Iterations" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Sets" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Sets}" Minimum="1" Maximum="9999" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Reps per set" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Reps}" Minimum="1" Maximum="9999" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Parallelism -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Parallelism" FontWeight="SemiBold" FontSize="13" />
+                <CheckBox Content="Parallel deployments" IsChecked="{Binding ParallelDeployment}" />
+                <CheckBox Content="Parallel reps"        IsChecked="{Binding ParallelRep}" />
+                <CheckBox Content="Parallel prompts"     IsChecked="{Binding ParallelPrompt}" />
+                <Grid ColumnDefinitions="160,*,Auto" Margin="0,4,0,0">
+                  <TextBlock Grid.Column="0" Text="Max concurrency" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding MaxConcurrency}" Minimum="0" Maximum="9999" />
+                  <TextBlock Grid.Column="2" Text="  (0 = unlimited)" VerticalAlignment="Center"
+                             Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Retry -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Retry" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Max attempts"    VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding RetryMaxAttempts}"   Minimum="1" Maximum="99" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Initial delay (s)" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RetryInitialDelayS}" Minimum="0" Increment="0.5" FormatString="F1" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Max delay (s)"   VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding RetryMaxDelayS}"     Minimum="0" Increment="5"   FormatString="F1" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Timing pauses -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Timing pauses (seconds)" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Between sets"        VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding PauseSetS}"        Minimum="0" Maximum="86400" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Between prompts"     VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PausePromptS}"     Minimum="0" Maximum="86400" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Between reps"        VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding PauseRepS}"        Minimum="0" Maximum="86400" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="3" Grid.Column="0" Text="Between deployments" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding PauseDeploymentS}" Minimum="0" Maximum="86400" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Random seeds -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Random seeds" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Prompt shuffle"     VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding SeedShufflePrompt}"     Minimum="0" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Deployment shuffle" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SeedShuffleDeployment}" Minimum="0" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Content shuffle"    VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding SeedShuffleContent}"    Minimum="0" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <!-- Output -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Output" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*">
+                  <TextBlock Grid.Column="0" Text="Log level" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1"
+                            SelectedItem="{Binding LogLevel}"
+                            ItemsSource="{x:Static vm:ExperimentSettingsViewModel.LogLevels}" />
+                </Grid>
+                <CheckBox Content="Omit null fields from manifest JSON"
+                          IsChecked="{Binding OmitNullFields}"
+                          Margin="0,4,0,0" />
+              </StackPanel>
+            </Border>
+
+            <!-- Save row -->
+            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
+              <Button Content="Save settings" Command="{Binding SaveCommand}" />
+              <TextBlock Text="{Binding SaveError}"
+                         Foreground="Red" VerticalAlignment="Center"
+                         IsVisible="{Binding SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+  </TabControl>
+</Window>

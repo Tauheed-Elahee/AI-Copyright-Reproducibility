@@ -57,7 +57,7 @@ namespace AICopyrightReproducibility
             _sem = anyParallel ? new SemaphoreSlim(cap, cap) : null;
         }
 
-        public async Task<List<RunRecord>> RunAllAsync()
+        public async Task<List<RunRecord>> RunAllAsync(CancellationToken ct = default)
         {
             List<RunRecord> records = new();
             for (int s = 1; s <= _iterations.Set; s++)
@@ -70,9 +70,9 @@ namespace AICopyrightReproducibility
                     var tasks = new List<Task<RunRecord[]>>();
                     for (int i = 0; i < boundOrder.Length; i++)
                     {
-                        tasks.Add(RunBound(s, boundOrder[i]));
+                        tasks.Add(RunBound(s, boundOrder[i], ct));
                         if (_pause.Prompt > 0 && i < boundOrder.Length - 1)
-                            await Task.Delay(TimeSpan.FromSeconds(_pause.Prompt));
+                            await Task.Delay(TimeSpan.FromSeconds(_pause.Prompt), ct);
                     }
                     foreach (RunRecord rec in (await Task.WhenAll(tasks)).SelectMany(x => x))
                         records.Add(rec);
@@ -81,9 +81,9 @@ namespace AICopyrightReproducibility
                 {
                     foreach (BoundPrompt bound in boundOrder)
                     {
-                        foreach (RunRecord rec in await RunBound(s, bound))
+                        foreach (RunRecord rec in await RunBound(s, bound, ct))
                             records.Add(rec);
-                        if (_pause.Prompt > 0) await Task.Delay(TimeSpan.FromSeconds(_pause.Prompt));
+                        if (_pause.Prompt > 0) await Task.Delay(TimeSpan.FromSeconds(_pause.Prompt), ct);
                     }
                 }
 
@@ -92,22 +92,22 @@ namespace AICopyrightReproducibility
                     DateTimeOffset resume = DateTimeOffset.UtcNow.AddSeconds(_pause.Set);
                     _logger.Info($"Set {s}/{_iterations.Set} complete. " +
                         $"Resuming at {resume:HH:mm:ss} UTC.");
-                    await Task.Delay(TimeSpan.FromSeconds(_pause.Set));
+                    await Task.Delay(TimeSpan.FromSeconds(_pause.Set), ct);
                 }
             }
             return records;
         }
 
-        private async Task<RunRecord[]> RunBound(int s, BoundPrompt bound)
+        private async Task<RunRecord[]> RunBound(int s, BoundPrompt bound, CancellationToken ct)
         {
             if (_par.Level.Rep)
             {
                 var tasks = new List<Task<RunRecord[]>>();
                 for (int r = 1; r <= _iterations.Rep; r++)
                 {
-                    tasks.Add(RunRep(s, bound, r));
+                    tasks.Add(RunRep(s, bound, r, ct));
                     if (_pause.Rep > 0 && r < _iterations.Rep)
-                        await Task.Delay(TimeSpan.FromSeconds(_pause.Rep));
+                        await Task.Delay(TimeSpan.FromSeconds(_pause.Rep), ct);
                 }
                 return (await Task.WhenAll(tasks)).SelectMany(x => x).ToArray();
             }
@@ -115,13 +115,13 @@ namespace AICopyrightReproducibility
             List<RunRecord> recs = new();
             for (int r = 1; r <= _iterations.Rep; r++)
             {
-                recs.AddRange(await RunRep(s, bound, r));
-                if (_pause.Rep > 0) await Task.Delay(TimeSpan.FromSeconds(_pause.Rep));
+                recs.AddRange(await RunRep(s, bound, r, ct));
+                if (_pause.Rep > 0) await Task.Delay(TimeSpan.FromSeconds(_pause.Rep), ct);
             }
             return recs.ToArray();
         }
 
-        private async Task<RunRecord[]> RunRep(int s, BoundPrompt bound, int r)
+        private async Task<RunRecord[]> RunRep(int s, BoundPrompt bound, int r, CancellationToken ct)
         {
             int globalRep = (s - 1) * _iterations.Rep + r;
             QueryConfig resolvedQuery = new QueryConfig
@@ -140,9 +140,9 @@ namespace AICopyrightReproducibility
                 var tasks = new List<Task<RunRecord>>();
                 for (int i = 0; i < deploymentOrder.Length; i++)
                 {
-                    tasks.Add(RunDeployment(s, deploymentOrder[i], resolvedQuery, r, bound));
+                    tasks.Add(RunDeployment(s, deploymentOrder[i], resolvedQuery, r, bound, ct));
                     if (_pause.Deployment > 0 && i < deploymentOrder.Length - 1)
-                        await Task.Delay(TimeSpan.FromSeconds(_pause.Deployment));
+                        await Task.Delay(TimeSpan.FromSeconds(_pause.Deployment), ct);
                 }
                 return await Task.WhenAll(tasks);
             }
@@ -150,15 +150,16 @@ namespace AICopyrightReproducibility
             List<RunRecord> recs = new();
             foreach (DeploymentConfig d in deploymentOrder)
             {
-                recs.Add(await RunDeployment(s, d, resolvedQuery, r, bound));
-                if (_pause.Deployment > 0) await Task.Delay(TimeSpan.FromSeconds(_pause.Deployment));
+                recs.Add(await RunDeployment(s, d, resolvedQuery, r, bound, ct));
+                if (_pause.Deployment > 0) await Task.Delay(TimeSpan.FromSeconds(_pause.Deployment), ct);
             }
             return recs.ToArray();
         }
 
-        private async Task<RunRecord> RunDeployment(int s, DeploymentConfig deployment, QueryConfig resolvedQuery, int r, BoundPrompt bound)
+        private async Task<RunRecord> RunDeployment(int s, DeploymentConfig deployment, QueryConfig resolvedQuery, int r, BoundPrompt bound, CancellationToken ct)
         {
-            if (_sem is not null) await _sem.WaitAsync().ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            if (_sem is not null) await _sem.WaitAsync(ct).ConfigureAwait(false);
             try
             {
                 string rawFileName = $"set{s:D2}_rep{r:D2}_{bound.QueryLabel}_{deployment.Label}.json";

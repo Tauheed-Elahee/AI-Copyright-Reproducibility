@@ -237,5 +237,22 @@ namespace AICopyrightReproducibility.Utils
             }
             return result;
         }
+
+        public static void FlattenJson(JsonElement element, string prefix, Dictionary<string, string> result)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (JsonProperty prop in element.EnumerateObject())
+                        FlattenJson(prop.Value, prefix + "." + prop.Name, result);
+                    break;
+                case JsonValueKind.String:
+                    result[prefix] = element.GetString() ?? "";
+                    break;
+                default:
+                    result[prefix] = element.GetRawText();
+                    break;
+            }
+        }
     }
 }

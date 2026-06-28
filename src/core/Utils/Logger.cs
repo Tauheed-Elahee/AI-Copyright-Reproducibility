@@ -11,6 +11,7 @@ namespace AICopyrightReproducibility.Utils
         private readonly TextWriter _err;
         private readonly TextWriter _file;
         private readonly TextWriter? _sysFile;
+        private TextWriter? _extraWriter;
         private Level _minConsole;
         private readonly object _lock = new();
 
@@ -26,6 +27,11 @@ namespace AICopyrightReproducibility.Utils
 
         public void SetLevel(Level level) => _minConsole = level;
 
+        public void SetExtraWriter(TextWriter? writer)
+        {
+            lock (_lock) { _extraWriter = writer; }
+        }
+
         public void Verbose(string msg) => Write(Level.Verbose, msg);
         public void Info(string msg)    => Write(Level.Info,    msg);
         public void Warn(string msg)    => Write(Level.Warning, msg);
@@ -39,6 +45,7 @@ namespace AICopyrightReproducibility.Utils
             {
                 _file.WriteLine(tagged);
                 _sysFile?.WriteLine(sysTagged);
+                _extraWriter?.WriteLine(sysTagged);
             }
             if (level < _minConsole) return;
             TextWriter dest = level >= Level.Warning ? _err : _out;
