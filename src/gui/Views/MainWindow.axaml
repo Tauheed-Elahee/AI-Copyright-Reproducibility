@@ -3,17 +3,17 @@
         xmlns:vm="using:AICopyrightReproducibility.Gui.ViewModels"
         x:DataType="vm:MainViewModel"
         x:Class="AICopyrightReproducibility.Gui.Views.MainWindow"
-        Title="aicr — AI Copyright Reproducibility"
+        Title="{Binding WindowTitle}"
         Width="1100" Height="750"
         MinWidth="700" MinHeight="500">
 
-  <TabControl>
+  <TabControl SelectedIndex="{Binding SelectedTabIndex}">
 
-    <!-- ── Tab 1: Run ─────────────────────────────────────────────────── -->
-    <TabItem Header="Run">
-      <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="12">
+    <!-- ── Tab 0: Open ────────────────────────────────────────────────── -->
+    <TabItem Header="Open">
+      <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="12">
 
-        <!-- Row 0: Directory picker -->
+        <!-- Directory picker -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,8">
           <TextBox Grid.Column="0"
                    Text="{Binding ProjectDir}"
@@ -28,16 +28,16 @@
                   Margin="6,0,0,0" />
         </Grid>
 
-        <!-- Row 1: Config summary (hidden until config loaded) -->
+        <!-- Config summary (visible when loaded) -->
         <Border Grid.Row="1"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8"
                 IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}">
-          <Grid RowDefinitions="Auto,Auto,Auto">
+          <Grid RowDefinitions="Auto,Auto">
             <TextBlock Grid.Row="0"
                        FontWeight="Bold" FontSize="14"
                        Text="{Binding Summary.ProjectName}" />
-            <WrapPanel Grid.Row="1" Margin="0,4,0,0">
+            <WrapPanel Grid.Row="1" Margin="0,6,0,0">
               <TextBlock Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
                          Margin="0,0,20,0"
                          IsVisible="{Binding Summary.Author, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -49,9 +49,201 @@
                          Margin="0,0,20,0" />
               <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"
                          Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}" />
+              <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"
+                         Margin="0,0,20,0" />
+              <TextBlock Text="READ-ONLY"
+                         Foreground="OrangeRed" FontWeight="SemiBold"
+                         IsVisible="{Binding Summary.IsReadOnly}" />
             </WrapPanel>
-            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
+          </Grid>
+        </Border>
+
+        <!-- Error message from load -->
+        <TextBlock Grid.Row="2"
+                   Text="{Binding ErrorMessage}"
+                   Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Margin="0,0,0,8" />
+
+        <!-- Recent projects list -->
+        <Grid Grid.Row="3" RowDefinitions="Auto,*"
+              IsVisible="{Binding HasRecentProjects}">
+          <TextBlock Grid.Row="0"
+                     Text="Recent"
+                     FontWeight="SemiBold" FontSize="12"
+                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                     Margin="0,0,0,4" />
+          <ItemsControl Grid.Row="1" ItemsSource="{Binding RecentProjects}"
+                        x:CompileBindings="False">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Content="{Binding Name}"
+                        ToolTip.Tip="{Binding Path}"
+                        Command="{Binding $parent[ItemsControl].DataContext.OpenRecentCommand}"
+                        CommandParameter="{Binding Path}"
+                        HorizontalAlignment="Left"
+                        HorizontalContentAlignment="Left"
+                        Margin="0,0,0,4" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Grid>
+
+      </Grid>
+    </TabItem>
+
+    <!-- ── Tab 1: Settings ────────────────────────────────────────────── -->
+    <TabItem Header="Settings"
+             IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <ScrollViewer Margin="12" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel DataContext="{Binding Settings}" Spacing="12" x:CompileBindings="False">
+
+          <TextBlock Text="Experiment settings are embedded in project.json and cannot be edited here."
+                     Foreground="OrangeRed"
+                     IsVisible="{Binding !CanEdit}"
+                     TextWrapping="Wrap" />
+
+          <StackPanel IsVisible="{Binding CanEdit}">
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Iterations" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Sets" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Sets}" Minimum="1" Maximum="9999" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Reps per set" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Reps}" Minimum="1" Maximum="9999" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Parallelism" FontWeight="SemiBold" FontSize="13" />
+                <CheckBox Content="Parallel deployments" IsChecked="{Binding ParallelDeployment}" />
+                <CheckBox Content="Parallel reps"        IsChecked="{Binding ParallelRep}" />
+                <CheckBox Content="Parallel prompts"     IsChecked="{Binding ParallelPrompt}" />
+                <Grid ColumnDefinitions="160,*,Auto" Margin="0,4,0,0">
+                  <TextBlock Grid.Column="0" Text="Max concurrency" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding MaxConcurrency}" Minimum="0" Maximum="9999" />
+                  <TextBlock Grid.Column="2" Text="  (0 = unlimited)" VerticalAlignment="Center"
+                             Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Retry" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Max attempts"      VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding RetryMaxAttempts}"   Minimum="1" Maximum="99" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Initial delay (s)" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RetryInitialDelayS}" Minimum="0" Increment="0.5" FormatString="F1" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Max delay (s)"     VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding RetryMaxDelayS}"     Minimum="0" Increment="5"   FormatString="F1" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Timing pauses (seconds)" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Between sets"        VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding PauseSetS}"        Minimum="0" Maximum="86400" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Between prompts"     VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PausePromptS}"     Minimum="0" Maximum="86400" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Between reps"        VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding PauseRepS}"        Minimum="0" Maximum="86400" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="3" Grid.Column="0" Text="Between deployments" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding PauseDeploymentS}" Minimum="0" Maximum="86400" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Random seeds" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Prompt shuffle"     VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding SeedShufflePrompt}"     Minimum="0" />
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Deployment shuffle" VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SeedShuffleDeployment}" Minimum="0" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Content shuffle"    VerticalAlignment="Center" Margin="0,4,0,0" />
+                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding SeedShuffleContent}"    Minimum="0" Margin="0,4,0,0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Output" FontWeight="SemiBold" FontSize="13" />
+                <Grid ColumnDefinitions="160,*">
+                  <TextBlock Grid.Column="0" Text="Log level" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1"
+                            SelectedItem="{Binding LogLevel}"
+                            ItemsSource="{x:Static vm:ExperimentSettingsViewModel.LogLevels}" />
+                </Grid>
+                <CheckBox Content="Omit null fields from manifest JSON"
+                          IsChecked="{Binding OmitNullFields}"
+                          Margin="0,4,0,0" />
+              </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Button Content="Save settings" Command="{Binding SaveCommand}" />
+              <TextBlock Text="Saved ✓"
+                         Foreground="Green" FontWeight="SemiBold" VerticalAlignment="Center"
+                         IsVisible="{Binding SaveSuccess}" />
+              <TextBlock Text="{Binding SaveError}"
+                         Foreground="Red" VerticalAlignment="Center"
+                         IsVisible="{Binding SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+    <!-- ── Tab 2: Run ─────────────────────────────────────────────────── -->
+    <TabItem Header="Run" IsEnabled="{Binding HasProject}">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="12">
+
+        <!-- Project info panel -->
+        <Border Grid.Row="0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0">
+              <TextBlock FontWeight="Bold" FontSize="14"
+                         Text="{Binding Summary.ProjectName}" />
+              <TextBlock FontSize="11" Margin="0,2,0,6"
+                         Text="{Binding ProjectDir}"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <WrapPanel>
+                <TextBlock Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
+                           Margin="0,0,20,0"
+                           IsVisible="{Binding Summary.Author, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}"
+                           Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"
+                           Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"
+                           Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"
+                           Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"
+                           Margin="0,0,20,0" />
+              </WrapPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
               <TextBlock Text="READ-ONLY — run not allowed"
                          Foreground="OrangeRed" FontWeight="SemiBold"
                          IsVisible="{Binding Summary.IsReadOnly}" />
@@ -62,12 +254,48 @@
           </Grid>
         </Border>
 
-        <!-- Row 2: Live log panel -->
-        <Border Grid.Row="2"
+        <!-- Progress bar + Cancel -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto"
+              IsVisible="{Binding IsRunning}" Margin="0,0,0,4">
+          <ProgressBar Grid.Column="0"
+                       Minimum="0"
+                       Maximum="{Binding ProgressTotal}"
+                       Value="{Binding ProgressCompleted}" />
+          <TextBlock Grid.Column="1"
+                     Text="{Binding ProgressCompleted}"
+                     Margin="8,0,6,0" VerticalAlignment="Center" />
+          <Button Grid.Column="2"
+                  Content="Cancel"
+                  Command="{Binding CancelCommand}" />
+        </Grid>
+
+        <!-- Current operation -->
+        <TextBlock Grid.Row="2"
+                   Text="{Binding CurrentOperation}"
+                   FontSize="11"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   IsVisible="{Binding CurrentOperation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Margin="0,0,0,4" />
+
+        <!-- Log panel with filter toggles -->
+        <Border Grid.Row="3"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                BorderThickness="1" CornerRadius="4" Margin="0,0,0,8">
+                BorderThickness="1" CornerRadius="4" Margin="0,0,0,6">
           <Grid RowDefinitions="Auto,*">
-            <TextBlock Grid.Row="0" Text="Log" FontWeight="SemiBold" Margin="6,4" />
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto"
+                  Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+              <TextBlock Grid.Column="0"
+                         Text="Log" FontWeight="SemiBold"
+                         Margin="8,4" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="0,2,4,2">
+                <ToggleButton Content="V" IsChecked="{Binding ShowVerbose}"
+                              ToolTip.Tip="Show verbose"  Padding="6,2" FontSize="11" />
+                <ToggleButton Content="I" IsChecked="{Binding ShowInfo}"
+                              ToolTip.Tip="Show info"     Padding="6,2" FontSize="11" />
+                <ToggleButton Content="W" IsChecked="{Binding ShowWarning}"
+                              ToolTip.Tip="Show warnings" Padding="6,2" FontSize="11" />
+              </StackPanel>
+            </Grid>
             <ScrollViewer Grid.Row="1" x:Name="LogScrollViewer"
                           HorizontalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding LogLines}">
@@ -84,194 +312,63 @@
           </Grid>
         </Border>
 
-        <!-- Row 3: Progress bar (visible while running) -->
-        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto"
-              IsVisible="{Binding IsRunning}" Margin="0,0,0,4">
-          <ProgressBar Grid.Column="0"
-                       Minimum="0"
-                       Maximum="{Binding ProgressTotal}"
-                       Value="{Binding ProgressCompleted}" />
-          <TextBlock Grid.Column="1"
-                     Text="{Binding ProgressCompleted}"
-                     Margin="8,0,6,0" VerticalAlignment="Center" />
-          <Button Grid.Column="2"
-                  Content="Cancel"
-                  Command="{Binding CancelCommand}" />
-        </Grid>
-
-        <!-- Row 4: Current operation label (visible while running) -->
+        <!-- Error message -->
         <TextBlock Grid.Row="4"
-                   Text="{Binding CurrentOperation}"
-                   FontSize="11"
-                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                   IsVisible="{Binding CurrentOperation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{Binding ErrorMessage}"
+                   Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,6" />
 
-        <!-- Row 5: Error message or results DataGrid -->
-        <Panel Grid.Row="5">
-          <TextBlock Text="{Binding ErrorMessage}"
-                     Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
-                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-          <StackPanel IsVisible="{Binding HasResults}">
-            <Button Content="Open output folder"
-                    Command="{Binding OpenOutputFolderCommand}"
-                    IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                    HorizontalAlignment="Left" Margin="0,0,0,6" />
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4">
-              <Grid RowDefinitions="Auto,*">
-                <TextBlock Grid.Row="0" Text="Results" FontWeight="SemiBold" Margin="6,4" />
-                <DataGrid Grid.Row="1"
-                          ItemsSource="{Binding Results}"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          GridLinesVisibility="Horizontal"
-                          MaxHeight="220">
-                  <DataGrid.Columns>
-                    <DataGridTextColumn Header="Deployment"
-                                        Binding="{Binding Deployment}" Width="*" />
-                    <DataGridTextColumn Header="Success"
-                                        Binding="{Binding SuccessCount}" Width="80" />
-                    <DataGridTextColumn Header="Errors"
-                                        Binding="{Binding ErrorCount}" Width="80" />
-                    <DataGridTextColumn Header="Total"
-                                        Binding="{Binding TotalRuns}" Width="70" />
-                    <DataGridTextColumn Header="Avg ms"
-                                        Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
-                  </DataGrid.Columns>
-                </DataGrid>
-              </Grid>
-            </Border>
-          </StackPanel>
-        </Panel>
+        <!-- Go to Output button -->
+        <Button Grid.Row="5"
+                Content="Go to Output →"
+                Command="{Binding GoToOutputCommand}"
+                IsVisible="{Binding RunCompleted}"
+                HorizontalAlignment="Left" />
 
       </Grid>
     </TabItem>
 
-    <!-- ── Tab 2: Settings ────────────────────────────────────────────── -->
-    <TabItem Header="Settings"
-             IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <ScrollViewer Margin="12" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel DataContext="{Binding Settings}" Spacing="12" x:CompileBindings="False">
+    <!-- ── Tab 3: Output ──────────────────────────────────────────────── -->
+    <TabItem Header="Output" IsEnabled="{Binding IsOutputAvailable}">
+      <Grid RowDefinitions="Auto,*" Margin="12">
 
-          <!-- Inline experiment note (shown when experiment is embedded in project.json) -->
-          <TextBlock Text="Experiment settings are embedded in project.json and cannot be edited here."
-                     Foreground="OrangeRed"
-                     IsVisible="{Binding !CanEdit}"
-                     TextWrapping="Wrap" />
+        <!-- Open output folder -->
+        <Button Grid.Row="0"
+                Content="Open output folder"
+                Command="{Binding OpenOutputFolderCommand}"
+                IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                HorizontalAlignment="Left" Margin="0,0,0,8" />
 
-          <StackPanel IsVisible="{Binding CanEdit}">
+        <!-- Results DataGrid -->
+        <Border Grid.Row="1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1" CornerRadius="4"
+                IsVisible="{Binding HasResults}">
+          <Grid RowDefinitions="Auto,*">
+            <TextBlock Grid.Row="0" Text="Results" FontWeight="SemiBold" Margin="6,4" />
+            <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Results}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      GridLinesVisibility="Horizontal">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Deployment"
+                                    Binding="{Binding Deployment}" Width="*" />
+                <DataGridTextColumn Header="Success"
+                                    Binding="{Binding SuccessCount}" Width="80" />
+                <DataGridTextColumn Header="Errors"
+                                    Binding="{Binding ErrorCount}" Width="80" />
+                <DataGridTextColumn Header="Total"
+                                    Binding="{Binding TotalRuns}" Width="70" />
+                <DataGridTextColumn Header="Avg ms"
+                                    Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </Border>
 
-            <!-- Iterations -->
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="10,8">
-              <StackPanel Spacing="6">
-                <TextBlock Text="Iterations" FontWeight="SemiBold" FontSize="13" />
-                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto">
-                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Sets" VerticalAlignment="Center" />
-                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Sets}" Minimum="1" Maximum="9999" />
-                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Reps per set" VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Reps}" Minimum="1" Maximum="9999" Margin="0,4,0,0" />
-                </Grid>
-              </StackPanel>
-            </Border>
-
-            <!-- Parallelism -->
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="10,8">
-              <StackPanel Spacing="6">
-                <TextBlock Text="Parallelism" FontWeight="SemiBold" FontSize="13" />
-                <CheckBox Content="Parallel deployments" IsChecked="{Binding ParallelDeployment}" />
-                <CheckBox Content="Parallel reps"        IsChecked="{Binding ParallelRep}" />
-                <CheckBox Content="Parallel prompts"     IsChecked="{Binding ParallelPrompt}" />
-                <Grid ColumnDefinitions="160,*,Auto" Margin="0,4,0,0">
-                  <TextBlock Grid.Column="0" Text="Max concurrency" VerticalAlignment="Center" />
-                  <NumericUpDown Grid.Column="1" Value="{Binding MaxConcurrency}" Minimum="0" Maximum="9999" />
-                  <TextBlock Grid.Column="2" Text="  (0 = unlimited)" VerticalAlignment="Center"
-                             Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                </Grid>
-              </StackPanel>
-            </Border>
-
-            <!-- Retry -->
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="10,8">
-              <StackPanel Spacing="6">
-                <TextBlock Text="Retry" FontWeight="SemiBold" FontSize="13" />
-                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto">
-                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Max attempts"    VerticalAlignment="Center" />
-                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding RetryMaxAttempts}"   Minimum="1" Maximum="99" />
-                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Initial delay (s)" VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RetryInitialDelayS}" Minimum="0" Increment="0.5" FormatString="F1" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Max delay (s)"   VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding RetryMaxDelayS}"     Minimum="0" Increment="5"   FormatString="F1" Margin="0,4,0,0" />
-                </Grid>
-              </StackPanel>
-            </Border>
-
-            <!-- Timing pauses -->
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="10,8">
-              <StackPanel Spacing="6">
-                <TextBlock Text="Timing pauses (seconds)" FontWeight="SemiBold" FontSize="13" />
-                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto">
-                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Between sets"        VerticalAlignment="Center" />
-                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding PauseSetS}"        Minimum="0" Maximum="86400" />
-                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Between prompts"     VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PausePromptS}"     Minimum="0" Maximum="86400" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Between reps"        VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding PauseRepS}"        Minimum="0" Maximum="86400" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="3" Grid.Column="0" Text="Between deployments" VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding PauseDeploymentS}" Minimum="0" Maximum="86400" Margin="0,4,0,0" />
-                </Grid>
-              </StackPanel>
-            </Border>
-
-            <!-- Random seeds -->
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="10,8">
-              <StackPanel Spacing="6">
-                <TextBlock Text="Random seeds" FontWeight="SemiBold" FontSize="13" />
-                <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto">
-                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Prompt shuffle"     VerticalAlignment="Center" />
-                  <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding SeedShufflePrompt}"     Minimum="0" />
-                  <TextBlock Grid.Row="1" Grid.Column="0" Text="Deployment shuffle" VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SeedShuffleDeployment}" Minimum="0" Margin="0,4,0,0" />
-                  <TextBlock Grid.Row="2" Grid.Column="0" Text="Content shuffle"    VerticalAlignment="Center" Margin="0,4,0,0" />
-                  <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding SeedShuffleContent}"    Minimum="0" Margin="0,4,0,0" />
-                </Grid>
-              </StackPanel>
-            </Border>
-
-            <!-- Output -->
-            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="10,8">
-              <StackPanel Spacing="6">
-                <TextBlock Text="Output" FontWeight="SemiBold" FontSize="13" />
-                <Grid ColumnDefinitions="160,*">
-                  <TextBlock Grid.Column="0" Text="Log level" VerticalAlignment="Center" />
-                  <ComboBox Grid.Column="1"
-                            SelectedItem="{Binding LogLevel}"
-                            ItemsSource="{x:Static vm:ExperimentSettingsViewModel.LogLevels}" />
-                </Grid>
-                <CheckBox Content="Omit null fields from manifest JSON"
-                          IsChecked="{Binding OmitNullFields}"
-                          Margin="0,4,0,0" />
-              </StackPanel>
-            </Border>
-
-            <!-- Save row -->
-            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,4,0,0">
-              <Button Content="Save settings" Command="{Binding SaveCommand}" />
-              <TextBlock Text="{Binding SaveError}"
-                         Foreground="Red" VerticalAlignment="Center"
-                         IsVisible="{Binding SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            </StackPanel>
-
-          </StackPanel>
-        </StackPanel>
-      </ScrollViewer>
+      </Grid>
     </TabItem>
 
   </TabControl>

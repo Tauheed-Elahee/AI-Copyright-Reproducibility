@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Reactive.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using ReactiveUI;
 using AICopyrightReproducibility.Config;
 using AICopyrightReproducibility.Utils;
@@ -42,6 +44,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
         private string? _experimentFilePath;
         private string? _saveError;
+        private bool    _saveSuccess;
 
         public decimal Sets                 { get => _sets;                 set => this.RaiseAndSetIfChanged(ref _sets,                 value); }
         public decimal Reps                 { get => _reps;                 set => this.RaiseAndSetIfChanged(ref _reps,                 value); }
@@ -78,6 +81,12 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         {
             get => _saveError;
             private set => this.RaiseAndSetIfChanged(ref _saveError, value);
+        }
+
+        public bool SaveSuccess
+        {
+            get => _saveSuccess;
+            private set => this.RaiseAndSetIfChanged(ref _saveSuccess, value);
         }
 
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
@@ -172,7 +181,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
                 var writeOpts = new JsonSerializerOptions(ProjectLoader.ReadOpts) { WriteIndented = true };
                 File.WriteAllText(ExperimentFilePath!, JsonSerializer.Serialize(cfg, writeOpts));
-                SaveError = null;
+                SaveError   = null;
+                SaveSuccess = true;
+                _ = Task.Delay(2500).ContinueWith(_ =>
+                    Dispatcher.UIThread.Post(() => SaveSuccess = false));
             }
             catch (Exception ex)
             {

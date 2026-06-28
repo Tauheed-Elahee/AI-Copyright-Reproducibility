@@ -20,6 +20,8 @@ using AICopyrightReproducibility.Gui.Services;
 
 namespace AICopyrightReproducibility.Gui.ViewModels
 {
+    public sealed record RecentProjectEntry(string Path, string Name, DateTimeOffset LastOpened);
+
     public sealed class MainViewModel : ViewModelBase
     {
         public enum RunState { Idle, Running, Completed, Failed }
@@ -33,9 +35,19 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         private string?               _outputDir;
         private string?               _currentOperation;
         private ExperimentSettingsViewModel? _settings;
+        private int                   _selectedTabIndex = 0;
+
+        private bool _showVerbose = true;
+        private bool _showInfo    = true;
+        private bool _showWarning = true;
+
+        private readonly List<string> _allLogLines = new();
 
         private CancellationTokenSource? _runCts;
         private Func<Task<string?>>?     _browseDelegate;
+
+        private static string RecentFilePath =>
+            System.IO.Path.Combine(AppPaths.StateDir, "recent.json");
 
         public string ProjectDir
         {
@@ -46,7 +58,11 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public LoadedProjectSummary? Summary
         {
             get => _summary;
-            private set => this.RaiseAndSetIfChanged(ref _summary, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _summary, value);
+                this.RaisePropertyChanged(nameof(HasProject));
+            }
         }
 
         public RunState State
@@ -56,19 +72,30 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _state, value);
                 this.RaisePropertyChanged(nameof(IsRunning));
+                this.RaisePropertyChanged(nameof(IsOutputAvailable));
+                this.RaisePropertyChanged(nameof(RunCompleted));
+                this.RaisePropertyChanged(nameof(WindowTitle));
             }
         }
 
         public int ProgressCompleted
         {
             get => _progressCompleted;
-            private set => this.RaiseAndSetIfChanged(ref _progressCompleted, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _progressCompleted, value);
+                this.RaisePropertyChanged(nameof(WindowTitle));
+            }
         }
 
         public int ProgressTotal
         {
             get => _progressTotal;
-            private set => this.RaiseAndSetIfChanged(ref _progressTotal, value);
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _progressTotal, value);
+                this.RaisePropertyChanged(nameof(WindowTitle));
+            }
         }
 
         public string? ErrorMessage
@@ -95,21 +122,63 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _settings, value);
         }
 
-        public bool IsRunning  => _state == RunState.Running;
-        public bool HasResults => Results.Count > 0;
+        public int SelectedTabIndex
+        {
+            get => _selectedTabIndex;
+            set => this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
+        }
 
-        public ObservableCollection<string>              LogLines { get; } = new();
-        public ObservableCollection<DeploymentResultRow> Results  { get; } = new();
+        public bool ShowVerbose
+        {
+            get => _showVerbose;
+            set { this.RaiseAndSetIfChanged(ref _showVerbose, value); ApplyLogFilter(); }
+        }
+
+        public bool ShowInfo
+        {
+            get => _showInfo;
+            set { this.RaiseAndSetIfChanged(ref _showInfo, value); ApplyLogFilter(); }
+        }
+
+        public bool ShowWarning
+        {
+            get => _showWarning;
+            set { this.RaiseAndSetIfChanged(ref _showWarning, value); ApplyLogFilter(); }
+        }
+
+        public bool IsRunning         => _state == RunState.Running;
+        public bool HasResults        => Results.Count > 0;
+        public bool HasProject        => _summary != null;
+        public bool IsOutputAvailable => _state != RunState.Idle;
+        public bool RunCompleted      => _state == RunState.Completed || _state == RunState.Failed;
+        public bool HasRecentProjects => RecentProjects.Count > 0;
+
+        public string WindowTitle => _state switch
+        {
+            RunState.Running   => $"aicr — {(_progressTotal > 0 ? 100 * _progressCompleted / _progressTotal : 0)}% ({_progressCompleted}/{_progressTotal})",
+            RunState.Completed => "aicr — Run complete",
+            RunState.Failed    => "aicr — Run failed",
+            _                  => "aicr — AI Copyright Reproducibility"
+        };
+
+        public ObservableCollection<string>              LogLines       { get; } = new();
+        public ObservableCollection<DeploymentResultRow> Results        { get; } = new();
+        public ObservableCollection<RecentProjectEntry>  RecentProjects { get; } = new();
 
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> BrowseCommand           { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> LoadConfigCommand       { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RunCommand              { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> CancelCommand           { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> OpenOutputFolderCommand { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> GoToOutputCommand       { get; }
+        public ReactiveCommand<string, System.Reactive.Unit>               OpenRecentCommand       { get; }
 
         public MainViewModel()
         {
-            Results.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasResults));
+            Results.CollectionChanged       += (_, _) => this.RaisePropertyChanged(nameof(HasResults));
+            RecentProjects.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasRecentProjects));
+
+            LoadRecentProjects();
 
             BrowseCommand = ReactiveCommand.CreateFromTask(ExecuteBrowse);
 
@@ -135,6 +204,9 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         Process.Start(new ProcessStartInfo { FileName = OutputDir, UseShellExecute = true });
                 },
                 this.WhenAnyValue(x => x.OutputDir).Select(d => d != null));
+
+            GoToOutputCommand   = ReactiveCommand.Create(() => { SelectedTabIndex = 3; });
+            OpenRecentCommand   = ReactiveCommand.CreateFromTask<string>(ExecuteOpenRecent);
         }
 
         public void SetBrowseDelegate(Func<Task<string?>> del) => _browseDelegate = del;
@@ -145,6 +217,12 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             string? path = await _browseDelegate();
             if (!string.IsNullOrWhiteSpace(path))
                 ProjectDir = path;
+        }
+
+        private async Task ExecuteOpenRecent(string path)
+        {
+            ProjectDir = path;
+            await ExecuteLoadConfig();
         }
 
         private async Task ExecuteLoadConfig()
@@ -159,15 +237,15 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Settings = await Task.Run(() =>
                 {
                     RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
-                        File.ReadAllText(Path.Combine(ProjectDir, "project.json")),
+                        File.ReadAllText(System.IO.Path.Combine(ProjectDir, "project.json")),
                         ProjectLoader.ReadOpts)!;
-                    string configLocDir = Path.Combine(ProjectDir, cfg.Project.Fs.Config.Dir);
+                    string configLocDir = System.IO.Path.Combine(ProjectDir, cfg.Project.Fs.Config.Dir);
 
                     ExperimentConfig expCfg = cfg.Experiment;
                     string? expFilePath = null;
                     if (cfg.Project.Fs.Config.Files?.Experiment is { } f)
                     {
-                        string p = Path.IsPathRooted(f) ? f : Path.Combine(configLocDir, f);
+                        string p = System.IO.Path.IsPathRooted(f) ? f : System.IO.Path.Combine(configLocDir, f);
                         if (File.Exists(p))
                         {
                             expCfg = JsonSerializer.Deserialize<ExperimentConfig>(
@@ -180,6 +258,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     vm.LoadFrom(expCfg, expFilePath);
                     return vm;
                 });
+
+                SaveRecentProjects();
             }
             catch (Exception ex)
             {
@@ -196,13 +276,18 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             ProgressCompleted = 0;
             ProgressTotal     = Math.Max(_summary?.TotalRuns ?? 1, 1);
             LogLines.Clear();
+            _allLogLines.Clear();
             Results.Clear();
 
             var channelWriter = new ChannelTextWriter();
             var drainTask = Task.Run(async () =>
             {
                 await foreach (string line in channelWriter.Reader.ReadAllAsync())
-                    await Dispatcher.UIThread.InvokeAsync(() => LogLines.Add(line));
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _allLogLines.Add(line);
+                        if (PassesFilter(line)) LogLines.Add(line);
+                    });
             });
 
             var progress = new Progress<RunProgressEvent>(evt =>
@@ -224,13 +309,13 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         System.Globalization.CultureInfo.InvariantCulture);
 
                     RunConfig cfgPreview = JsonSerializer.Deserialize<RunConfig>(
-                        File.ReadAllText(Path.Combine(ProjectDir, "project.json")),
+                        File.ReadAllText(System.IO.Path.Combine(ProjectDir, "project.json")),
                         ProjectLoader.ReadOpts)!;
-                    string logDir = Path.Combine(ProjectDir, cfgPreview.Project.Fs.Log.Dir);
+                    string logDir = System.IO.Path.Combine(ProjectDir, cfgPreview.Project.Fs.Log.Dir);
                     Directory.CreateDirectory(logDir);
 
                     using StreamWriter fileWriter = new StreamWriter(
-                        Path.Combine(logDir, $"aicr-{stamp}.log"), append: false) { AutoFlush = true };
+                        System.IO.Path.Combine(logDir, $"aicr-{stamp}.log"), append: false) { AutoFlush = true };
                     using Logger logger = new Logger(
                         TextWriter.Null, TextWriter.Null, fileWriter, Logger.Level.Verbose);
                     logger.SetExtraWriter(channelWriter);
@@ -254,21 +339,21 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     logger.Info("═══ RUN COMPLETED ═══");
 
                     JsonSerializerOptions jsonOpts = new JsonSerializerOptions { WriteIndented = true };
-                    File.WriteAllText(Path.Combine(loaded.OutDir, "manifest.json"),
+                    File.WriteAllText(System.IO.Path.Combine(loaded.OutDir, "manifest.json"),
                         JsonSerializer.Serialize(records, jsonOpts));
-                    OutputWriter.WriteManifestCsv(records, Path.Combine(loaded.OutDir, "manifest.csv"));
+                    OutputWriter.WriteManifestCsv(records, System.IO.Path.Combine(loaded.OutDir, "manifest.csv"));
                     OutputWriter.WriteIdentityGroups(records, logger);
                     if (records.Any(r => r.SectionCount > 0))
                     {
                         OutputWriter.WriteSummaryCountsCsv(records,
-                            Path.Combine(loaded.OutDir, "summary_counts.csv"));
+                            System.IO.Path.Combine(loaded.OutDir, "summary_counts.csv"));
                         OutputWriter.WriteSummaryPctCsv(records,
-                            Path.Combine(loaded.OutDir, "summary_pct.csv"));
+                            System.IO.Path.Combine(loaded.OutDir, "summary_pct.csv"));
                         OutputWriter.WriteConsoleSummary(records, logger);
                         OutputWriter.WriteConsolePctSummary(records, logger);
                     }
 
-                    string resolvedOutDir = Path.GetFullPath(loaded.OutDir);
+                    string resolvedOutDir = System.IO.Path.GetFullPath(loaded.OutDir);
                     logger.Info($"\nOutput written to: {resolvedOutDir}");
 
                     if (loaded.Config.Project.Location != ProjectDir)
@@ -288,7 +373,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         }
                     };
                     File.WriteAllText(
-                        Path.Combine(ProjectDir, "project.json"),
+                        System.IO.Path.Combine(ProjectDir, "project.json"),
                         JsonSerializer.Serialize(new { project = loaded.Config.Project }, writeBackOpts));
 
                     var rows = records
@@ -336,6 +421,65 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 channelWriter.Dispose();
                 await drainTask;
             }
+        }
+
+        // ── Log filter helpers ────────────────────────────────────────────────
+
+        private static bool IsVerboseLine(string line) => line.Contains("[VERBOSE]");
+        private static bool IsWarningLine(string line) => line.Contains("[WARN]") || line.Contains("[ERROR]");
+        private static bool IsInfoLine(string line)    => !IsVerboseLine(line) && !IsWarningLine(line);
+
+        private bool PassesFilter(string line) =>
+            (_showVerbose && IsVerboseLine(line)) ||
+            (_showInfo    && IsInfoLine(line))    ||
+            (_showWarning && IsWarningLine(line));
+
+        private void ApplyLogFilter()
+        {
+            LogLines.Clear();
+            foreach (string line in _allLogLines)
+                if (PassesFilter(line)) LogLines.Add(line);
+        }
+
+        // ── Recent projects ───────────────────────────────────────────────────
+
+        private void LoadRecentProjects()
+        {
+            try
+            {
+                string file = RecentFilePath;
+                if (!File.Exists(file)) return;
+                var entries = JsonSerializer.Deserialize<List<RecentProjectEntry>>(
+                    File.ReadAllText(file)) ?? new();
+                foreach (var e in entries.Take(10))
+                    RecentProjects.Add(e);
+            }
+            catch { /* silently ignore — recent list is non-critical */ }
+        }
+
+        private void SaveRecentProjects()
+        {
+            try
+            {
+                var entry = new RecentProjectEntry(
+                    ProjectDir,
+                    _summary?.ProjectName ?? System.IO.Path.GetFileName(ProjectDir) ?? ProjectDir,
+                    DateTimeOffset.UtcNow);
+
+                var entries = RecentProjects
+                    .Where(e => !string.Equals(e.Path, ProjectDir, StringComparison.OrdinalIgnoreCase))
+                    .Prepend(entry)
+                    .Take(10)
+                    .ToList();
+
+                string file = RecentFilePath;
+                Directory.CreateDirectory(System.IO.Path.GetDirectoryName(file)!);
+                File.WriteAllText(file, JsonSerializer.Serialize(entries));
+
+                RecentProjects.Clear();
+                foreach (var e in entries) RecentProjects.Add(e);
+            }
+            catch { /* silently ignore */ }
         }
 
         private static SemanticVersion GetGuiVersion()
