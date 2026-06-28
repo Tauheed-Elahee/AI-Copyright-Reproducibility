@@ -1,11 +1,73 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:AICopyrightReproducibility.Gui.ViewModels"
+        xmlns:conv="using:AICopyrightReproducibility.Gui.Converters"
         x:DataType="vm:MainViewModel"
         x:Class="AICopyrightReproducibility.Gui.Views.MainWindow"
         Title="{Binding WindowTitle}"
         Width="1100" Height="750"
         MinWidth="700" MinHeight="500">
+
+  <Window.Resources>
+    <!--
+      Custom ControlTemplate for log-level filter toggles.
+      The Fluent theme sets the checked background directly on the inner
+      ContentPresenter via its own :checked /template/ style, bypassing any
+      Background setter on the ToggleButton element itself. By defining our
+      own template with TemplateBinding, the ToggleButton.Background property
+      actually drives what is rendered, so our per-severity checked styles work.
+    -->
+    <ControlTemplate x:Key="LogFilterToggleTemplate" TargetType="ToggleButton">
+      <Border Background="{TemplateBinding Background}"
+              BorderBrush="{TemplateBinding BorderBrush}"
+              BorderThickness="{TemplateBinding BorderThickness}"
+              CornerRadius="3"
+              Padding="{TemplateBinding Padding}">
+        <ContentPresenter HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Content="{TemplateBinding Content}"
+                          Foreground="{TemplateBinding Foreground}" />
+      </Border>
+    </ControlTemplate>
+  </Window.Resources>
+
+  <Window.Styles>
+    <!-- base: all log-filter toggle buttons -->
+    <Style Selector="ToggleButton.log-filter">
+      <Setter Property="Template"        Value="{StaticResource LogFilterToggleTemplate}"/>
+      <Setter Property="Background"      Value="Transparent"/>
+      <Setter Property="BorderBrush"     Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground"      Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+      <Setter Property="Opacity"         Value="0.55"/>
+    </Style>
+    <!-- hover (unchecked): brighten slightly -->
+    <Style Selector="ToggleButton.log-filter:pointerover">
+      <Setter Property="Opacity" Value="0.8"/>
+    </Style>
+    <!-- checked base: full opacity + white text for all levels -->
+    <Style Selector="ToggleButton.log-filter:checked">
+      <Setter Property="Opacity"   Value="1"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <!-- checked per severity (ordering matters: these run after :checked) -->
+    <Style Selector="ToggleButton.log-filter.log-v:checked">
+      <Setter Property="Background"  Value="#606060"/>
+      <Setter Property="BorderBrush" Value="#505050"/>
+    </Style>
+    <Style Selector="ToggleButton.log-filter.log-i:checked">
+      <Setter Property="Background"  Value="{DynamicResource SystemAccentColor}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+    </Style>
+    <Style Selector="ToggleButton.log-filter.log-w:checked">
+      <Setter Property="Background"  Value="#C47A00"/>
+      <Setter Property="BorderBrush" Value="#A06500"/>
+    </Style>
+    <Style Selector="ToggleButton.log-filter.log-e:checked">
+      <Setter Property="Background"  Value="#C02828"/>
+      <Setter Property="BorderBrush" Value="#A02020"/>
+    </Style>
+  </Window.Styles>
 
   <TabControl SelectedIndex="{Binding SelectedTabIndex}">
 
@@ -214,7 +276,7 @@
 
     <!-- ── Tab 2: Run ─────────────────────────────────────────────────── -->
     <TabItem Header="Run" IsEnabled="{Binding HasProject}">
-      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="12">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12">
 
         <!-- Project info panel -->
         <Border Grid.Row="0"
@@ -243,13 +305,18 @@
                            Margin="0,0,20,0" />
               </WrapPanel>
             </StackPanel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="READ-ONLY — run not allowed"
                          Foreground="OrangeRed" FontWeight="SemiBold"
                          IsVisible="{Binding Summary.IsReadOnly}" />
-              <Button Content="Run Experiment"
-                      Command="{Binding RunCommand}"
-                      IsVisible="{Binding !Summary.IsReadOnly}" />
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          IsVisible="{Binding !Summary.IsReadOnly}">
+                <Button Content="Run Experiment"
+                        Command="{Binding RunCommand}" />
+                <Button Content="Go to Output →"
+                        Command="{Binding GoToOutputCommand}"
+                        IsVisible="{Binding RunCompleted}" />
+              </StackPanel>
             </StackPanel>
           </Grid>
         </Border>
@@ -288,20 +355,37 @@
                          Text="Log" FontWeight="SemiBold"
                          Margin="8,4" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="0,2,4,2">
-                <ToggleButton Content="V" IsChecked="{Binding ShowVerbose}"
-                              ToolTip.Tip="Show verbose"  Padding="6,2" FontSize="11" />
-                <ToggleButton Content="I" IsChecked="{Binding ShowInfo}"
-                              ToolTip.Tip="Show info"     Padding="6,2" FontSize="11" />
-                <ToggleButton Content="W" IsChecked="{Binding ShowWarning}"
-                              ToolTip.Tip="Show warnings" Padding="6,2" FontSize="11" />
+                <Button Content="All"  Command="{Binding SelectAllLogsCommand}"
+                        Padding="6,2" FontSize="11" ToolTip.Tip="Show all levels" />
+                <Button Content="None" Command="{Binding SelectNoneLogsCommand}"
+                        Padding="6,2" FontSize="11" ToolTip.Tip="Hide all levels" />
+                <Rectangle Width="1" Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           Margin="4,2" VerticalAlignment="Stretch" />
+                <ToggleButton Classes="log-filter log-v" IsChecked="{Binding ShowVerbose}"
+                              Content="V" ToolTip.Tip="Verbose"
+                              Padding="6,2" FontSize="11"
+                              FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
+                <ToggleButton Classes="log-filter log-i" IsChecked="{Binding ShowInfo}"
+                              Content="I" ToolTip.Tip="Info"
+                              Padding="6,2" FontSize="11"
+                              FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
+                <ToggleButton Classes="log-filter log-w" IsChecked="{Binding ShowWarning}"
+                              Content="W" ToolTip.Tip="Warning"
+                              Padding="6,2" FontSize="11"
+                              FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
+                <ToggleButton Classes="log-filter log-e" IsChecked="{Binding ShowError}"
+                              Content="E" ToolTip.Tip="Error"
+                              Padding="6,2" FontSize="11"
+                              FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
               </StackPanel>
             </Grid>
             <ScrollViewer Grid.Row="1" x:Name="LogScrollViewer"
                           HorizontalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding LogLines}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding}"
+                  <DataTemplate x:DataType="vm:LogLine">
+                    <TextBlock Text="{Binding Text}"
+                               Foreground="{Binding Level, Converter={x:Static conv:LogLevelBrushConverter.Instance}}"
                                FontFamily="Cascadia Code,Consolas,Menlo,monospace"
                                FontSize="11"
                                TextWrapping="NoWrap" />
@@ -318,13 +402,6 @@
                    Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,6" />
-
-        <!-- Go to Output button -->
-        <Button Grid.Row="5"
-                Content="Go to Output →"
-                Command="{Binding GoToOutputCommand}"
-                IsVisible="{Binding RunCompleted}"
-                HorizontalAlignment="Left" />
 
       </Grid>
     </TabItem>

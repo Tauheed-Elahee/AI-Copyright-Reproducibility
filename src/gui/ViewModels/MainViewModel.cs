@@ -40,8 +40,9 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         private bool _showVerbose = true;
         private bool _showInfo    = true;
         private bool _showWarning = true;
+        private bool _showError   = true;
 
-        private readonly List<string> _allLogLines = new();
+        private readonly List<LogLine> _allLogLines = new();
 
         private CancellationTokenSource? _runCts;
         private Func<Task<string?>>?     _browseDelegate;
@@ -146,6 +147,12 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             set { this.RaiseAndSetIfChanged(ref _showWarning, value); ApplyLogFilter(); }
         }
 
+        public bool ShowError
+        {
+            get => _showError;
+            set { this.RaiseAndSetIfChanged(ref _showError, value); ApplyLogFilter(); }
+        }
+
         public bool IsRunning         => _state == RunState.Running;
         public bool HasResults        => Results.Count > 0;
         public bool HasProject        => _summary != null;
@@ -161,7 +168,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             _                  => "aicr — AI Copyright Reproducibility"
         };
 
-        public ObservableCollection<string>              LogLines       { get; } = new();
+        public ObservableCollection<LogLine>             LogLines       { get; } = new();
         public ObservableCollection<DeploymentResultRow> Results        { get; } = new();
         public ObservableCollection<RecentProjectEntry>  RecentProjects { get; } = new();
 
@@ -171,6 +178,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> CancelCommand           { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> OpenOutputFolderCommand { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> GoToOutputCommand       { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SelectAllLogsCommand    { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SelectNoneLogsCommand   { get; }
         public ReactiveCommand<string, System.Reactive.Unit>               OpenRecentCommand       { get; }
 
         public MainViewModel()
@@ -205,8 +214,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 },
                 this.WhenAnyValue(x => x.OutputDir).Select(d => d != null));
 
-            GoToOutputCommand   = ReactiveCommand.Create(() => { SelectedTabIndex = 3; });
-            OpenRecentCommand   = ReactiveCommand.CreateFromTask<string>(ExecuteOpenRecent);
+            GoToOutputCommand     = ReactiveCommand.Create(() => { SelectedTabIndex = 3; });
+            SelectAllLogsCommand  = ReactiveCommand.Create(() => SetAllFilters(true));
+            SelectNoneLogsCommand = ReactiveCommand.Create(() => SetAllFilters(false));
+            OpenRecentCommand     = ReactiveCommand.CreateFromTask<string>(ExecuteOpenRecent);
         }
 
         public void SetBrowseDelegate(Func<Task<string?>> del) => _browseDelegate = del;
@@ -282,12 +293,15 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             var channelWriter = new ChannelTextWriter();
             var drainTask = Task.Run(async () =>
             {
-                await foreach (string line in channelWriter.Reader.ReadAllAsync())
+                await foreach (string text in channelWriter.Reader.ReadAllAsync())
+                {
+                    var line = new LogLine(text, ParseLevel(text));
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         _allLogLines.Add(line);
                         if (PassesFilter(line)) LogLines.Add(line);
                     });
+                }
             });
 
             var progress = new Progress<RunProgressEvent>(evt =>
@@ -425,19 +439,40 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
         // ── Log filter helpers ────────────────────────────────────────────────
 
-        private static bool IsVerboseLine(string line) => line.Contains("[VERBOSE]");
-        private static bool IsWarningLine(string line) => line.Contains("[WARN]") || line.Contains("[ERROR]");
-        private static bool IsInfoLine(string line)    => !IsVerboseLine(line) && !IsWarningLine(line);
+        private static Logger.Level ParseLevel(string line)
+        {
+            if (line.Contains("[VERBOSE]")) return Logger.Level.Verbose;
+            if (line.Contains("[ERROR]"))   return Logger.Level.Error;
+            if (line.Contains("[WARN]"))    return Logger.Level.Warning;
+            return Logger.Level.Info;
+        }
 
-        private bool PassesFilter(string line) =>
-            (_showVerbose && IsVerboseLine(line)) ||
-            (_showInfo    && IsInfoLine(line))    ||
-            (_showWarning && IsWarningLine(line));
+        private bool PassesFilter(LogLine line) => line.Level switch
+        {
+            Logger.Level.Verbose => _showVerbose,
+            Logger.Level.Info    => _showInfo,
+            Logger.Level.Warning => _showWarning,
+            Logger.Level.Error   => _showError,
+            _                    => true
+        };
+
+        private void SetAllFilters(bool value)
+        {
+            _showVerbose = value;
+            _showInfo    = value;
+            _showWarning = value;
+            _showError   = value;
+            this.RaisePropertyChanged(nameof(ShowVerbose));
+            this.RaisePropertyChanged(nameof(ShowInfo));
+            this.RaisePropertyChanged(nameof(ShowWarning));
+            this.RaisePropertyChanged(nameof(ShowError));
+            ApplyLogFilter();
+        }
 
         private void ApplyLogFilter()
         {
             LogLines.Clear();
-            foreach (string line in _allLogLines)
+            foreach (var line in _allLogLines)
                 if (PassesFilter(line)) LogLines.Add(line);
         }
 
