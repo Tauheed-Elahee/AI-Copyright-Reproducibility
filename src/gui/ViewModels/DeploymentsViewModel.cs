@@ -6,11 +6,18 @@ using AICopyrightReproducibility.Config;
 
 namespace AICopyrightReproducibility.Gui.ViewModels
 {
+    public sealed record ParameterEntry(string Key, string Value);
+
     public sealed record DeploymentDisplayItem(
         string  Label,
         string  Mode,
         string? Endpoint,
-        string  ParameterSummary);
+        IReadOnlyList<ParameterEntry> Parameters)
+    {
+        public bool HasEndpoint   => !string.IsNullOrEmpty(Endpoint);
+        public bool HasParameters => Parameters.Count > 0;
+        public bool HasBody       => HasEndpoint || HasParameters;
+    }
 
     public sealed class DeploymentsViewModel : ViewModelBase
     {
@@ -25,10 +32,9 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     d.Label,
                     d.Mode.ToString(),
                     d.Connection.Endpoint,
-                    FormatParams(d.Parameters)));
+                    d.Parameters
+                        .Select(kv => new ParameterEntry(kv.Key, kv.Value.ToString()))
+                        .ToList()));
         }
-
-        private static string FormatParams(Dictionary<string, JsonElement> p) =>
-            p.Count == 0 ? "" : string.Join("  ·  ", p.Select(kv => $"{kv.Key}={kv.Value}"));
     }
 }

@@ -317,35 +317,67 @@
 
       <!-- ── Deployments ───────────────────────────────────────────────── -->
       <ScrollViewer Margin="12" IsVisible="{Binding IsDeploymentsPage}">
-        <StackPanel x:CompileBindings="False" Spacing="0">
+        <StackPanel x:CompileBindings="False" Spacing="14">
 
-          <TextBlock Text="Deployments" FontWeight="Bold" FontSize="18" Margin="0,0,0,8" />
+          <TextBlock Text="Deployments" FontWeight="Bold" FontSize="18" />
 
           <TextBlock Text="No deployments configured."
-                     IsVisible="{Binding !Deployments.HasItems}"
-                     Margin="0,8" />
+                     IsVisible="{Binding !Deployments.HasItems}" />
 
           <ItemsControl ItemsSource="{Binding Deployments.Items}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                        BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,10">
-                  <Grid RowDefinitions="Auto,Auto,Auto">
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                      <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="Bold" FontSize="14" />
+                        BorderThickness="1" CornerRadius="4" Padding="14,12" Margin="0,0,0,10">
+                  <Grid RowDefinitions="Auto,Auto">
+
+                    <!-- Name + mode badge -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Label}"
+                                 FontWeight="Bold" FontSize="14"
+                                 VerticalAlignment="Center" />
                       <Border Grid.Column="1"
-                              Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                              CornerRadius="3" Padding="6,2">
-                        <TextBlock Text="{Binding Mode}" FontSize="13" />
+                              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              BorderThickness="1" CornerRadius="3" Padding="6,2">
+                        <TextBlock Text="{Binding Mode}" FontSize="12" FontWeight="SemiBold" />
                       </Border>
                     </Grid>
-                    <TextBlock Grid.Row="1" Text="{Binding Endpoint}" FontSize="13"
-                               IsVisible="{Binding Endpoint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               Margin="0,0,0,4" />
-                    <TextBlock Grid.Row="2" Text="{Binding ParameterSummary}"
-                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="13"
-                               IsVisible="{Binding ParameterSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               TextWrapping="Wrap" />
+
+                    <!-- Body: endpoint + parameters -->
+                    <StackPanel Grid.Row="1" Margin="0,10,0,0" Spacing="6"
+                                IsVisible="{Binding HasBody}">
+
+                      <Grid ColumnDefinitions="110,*" IsVisible="{Binding HasEndpoint}">
+                        <TextBlock Grid.Column="0"
+                                   Text="Endpoint"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   VerticalAlignment="Top" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Endpoint}"
+                                   FontSize="13" TextWrapping="Wrap" />
+                      </Grid>
+
+                      <ItemsControl ItemsSource="{Binding Parameters}"
+                                    IsVisible="{Binding HasParameters}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Grid ColumnDefinitions="110,*" Margin="0,0,0,3">
+                              <TextBlock Grid.Column="0"
+                                         Text="{Binding Key}"
+                                         FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                         FontSize="12" FontWeight="SemiBold" />
+                              <TextBlock Grid.Column="1"
+                                         Text="{Binding Value}"
+                                         FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                         FontSize="13" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+
+                    </StackPanel>
+
                   </Grid>
                 </Border>
               </DataTemplate>
