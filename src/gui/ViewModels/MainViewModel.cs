@@ -204,6 +204,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public ObservableCollection<DeploymentResultRow> Results        { get; } = new();
         public ObservableCollection<RecentProjectEntry>  RecentProjects { get; } = new();
         public ObservableCollection<RunOption>           AvailableRuns  { get; } = new();
+        public ChartsViewModel                           Charts         { get; } = new();
 
         public RunOption? SelectedRunOption
         {
@@ -216,10 +217,12 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 {
                     OutputDir = _currentRunOutputDir;
                     foreach (var row in _currentRunResults) Results.Add(row);
+                    Charts.LoadFrom(_currentRunResults);
                 }
                 else
                 {
                     OutputDir = value.OutputDirectory;
+                    Charts.LoadFrom(System.Array.Empty<DeploymentResultRow>());
                     _ = LoadHistoricalRunAsync(value.OutputDirectory!);
                 }
             }
@@ -562,7 +565,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                             Deployment    = g.Key,
                             SuccessCount  = g.Count(r => r.Status == 200),
                             ErrorCount    = g.Count(r => r.Status != 200),
-                            AvgDurationMs = g.Any() ? g.Average(r => r.DurationMs) : 0
+                            AvgDurationMs = g.Any() ? g.Average(r => r.DurationMs) : 0,
+                            Durations     = g.Select(r => r.DurationMs).ToArray()
                         })
                         .OrderBy(r => r.Deployment)
                         .ToList();
@@ -574,6 +578,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         AvailableRuns.Insert(1, new RunOption(FormatStamp(stamp), resolvedOutDir));
 
                         foreach (var row in rows) Results.Add(row);
+                        Charts.LoadFrom(rows);
                         OutputDir        = resolvedOutDir;
                         CurrentOperation = null;
                         State            = RunState.Completed;
@@ -732,7 +737,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                             Deployment    = g.Key,
                             SuccessCount  = g.Count(r => r.Status == 200),
                             ErrorCount    = g.Count(r => r.Status != 200),
-                            AvgDurationMs = g.Any() ? g.Average(r => r.DurationMs) : 0
+                            AvgDurationMs = g.Any() ? g.Average(r => r.DurationMs) : 0,
+                            Durations     = g.Select(r => r.DurationMs).ToArray()
                         })
                         .OrderBy(r => r.Deployment)
                         .ToList();
@@ -744,6 +750,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     {
                         Results.Clear();
                         foreach (var row in rows) Results.Add(row);
+                        Charts.LoadFrom(rows);
                     }
                 });
             }

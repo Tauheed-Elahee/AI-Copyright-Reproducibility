@@ -14,13 +14,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia"                    Version="11.2.0" />
-    <PackageReference Include="Avalonia.Desktop"            Version="11.2.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent"      Version="11.2.0" />
-    <PackageReference Include="Avalonia.Controls.DataGrid"  Version="11.2.0" />
-    <PackageReference Include="Avalonia.ReactiveUI"         Version="11.2.0" />
-    <PackageReference Include="ReactiveUI"                  Version="20.1.1" />
-    <PackageReference Include="NuGet.Versioning"            Version="7.6.0" />
+    <PackageReference Include="Avalonia" Version="11.2.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.0" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.0" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.0" />
+    <PackageReference Include="ReactiveUI" Version="20.1.1" />
+    <PackageReference Include="NuGet.Versioning" Version="7.6.0" />
+    <PackageReference Include="ScottPlot.Avalonia" Version="5.0.56" />
   </ItemGroup>
 
   <ItemGroup>
