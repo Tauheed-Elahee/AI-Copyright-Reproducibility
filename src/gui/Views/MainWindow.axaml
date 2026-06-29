@@ -689,8 +689,9 @@
         <StackPanel Spacing="12" MaxWidth="740">
           <TextBlock Text="License" FontWeight="Bold" FontSize="18" />
           <TextBlock Text="PolyForm Strict License 1.0.0" FontWeight="SemiBold" FontSize="14" />
-          <TextBlock Text="https://polyformproject.org/licenses/strict/1.0.0"
-                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+          <HyperlinkButton NavigateUri="https://polyformproject.org/licenses/strict/1.0.0"
+                           Content="https://polyformproject.org/licenses/strict/1.0.0"
+                           Padding="0" />
 
           <TextBlock Text="Acceptance" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
@@ -753,6 +754,9 @@
                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         <TextBlock TextWrapping="Wrap"
                    Text="A tool for running and analysing AI copyright reproducibility experiments." />
+        <HyperlinkButton NavigateUri="https://ai-copyright-reproducibility.tauheed-elahee.com/"
+                         Content="https://ai-copyright-reproducibility.tauheed-elahee.com/"
+                         Padding="0" />
       </StackPanel>
 
     </Grid>
