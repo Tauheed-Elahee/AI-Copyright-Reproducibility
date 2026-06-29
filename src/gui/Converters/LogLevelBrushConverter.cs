@@ -11,7 +11,7 @@ namespace AICopyrightReproducibility.Gui.Converters
     {
         public static readonly LogLevelBrushConverter Instance = new();
 
-        private static readonly IBrush VerboseBrush = new SolidColorBrush(Color.FromRgb(120, 120, 120));
+        private static readonly IBrush VerboseBrush = new SolidColorBrush(Color.FromRgb(168, 168, 168));
         private static readonly IBrush WarningBrush  = new SolidColorBrush(Color.FromRgb(220, 130,   0));
         private static readonly IBrush ErrorBrush    = new SolidColorBrush(Color.FromRgb(210,  50,  45));
 

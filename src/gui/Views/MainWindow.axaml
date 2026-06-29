@@ -3,6 +3,7 @@
         xmlns:vm="using:AICopyrightReproducibility.Gui.ViewModels"
         xmlns:conv="using:AICopyrightReproducibility.Gui.Converters"
         xmlns:sp="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
         x:DataType="vm:MainViewModel"
         x:Class="AICopyrightReproducibility.Gui.Views.MainWindow"
         Title="{Binding WindowTitle}"
@@ -10,14 +11,6 @@
         MinWidth="700" MinHeight="500">
 
   <Window.Resources>
-    <!--
-      Custom ControlTemplate for log-level filter toggles.
-      The Fluent theme sets the checked background directly on the inner
-      ContentPresenter via its own :checked /template/ style, bypassing any
-      Background setter on the ToggleButton element itself. By defining our
-      own template with TemplateBinding, the ToggleButton.Background property
-      actually drives what is rendered, so our per-severity checked styles work.
-    -->
     <ControlTemplate x:Key="LogFilterToggleTemplate" TargetType="ToggleButton">
       <Border Background="{TemplateBinding Background}"
               BorderBrush="{TemplateBinding BorderBrush}"
@@ -33,7 +26,6 @@
   </Window.Resources>
 
   <Window.Styles>
-    <!-- base: all log-filter toggle buttons -->
     <Style Selector="ToggleButton.log-filter">
       <Setter Property="Template"        Value="{StaticResource LogFilterToggleTemplate}"/>
       <Setter Property="Background"      Value="Transparent"/>
@@ -42,16 +34,13 @@
       <Setter Property="Foreground"      Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
       <Setter Property="Opacity"         Value="0.55"/>
     </Style>
-    <!-- hover (unchecked): brighten slightly -->
     <Style Selector="ToggleButton.log-filter:pointerover">
       <Setter Property="Opacity" Value="0.8"/>
     </Style>
-    <!-- checked base: full opacity + white text for all levels -->
     <Style Selector="ToggleButton.log-filter:checked">
       <Setter Property="Opacity"   Value="1"/>
       <Setter Property="Foreground" Value="White"/>
     </Style>
-    <!-- checked per severity (ordering matters: these run after :checked) -->
     <Style Selector="ToggleButton.log-filter.log-v:checked">
       <Setter Property="Background"  Value="#606060"/>
       <Setter Property="BorderBrush" Value="#505050"/>
@@ -70,82 +59,125 @@
     </Style>
   </Window.Styles>
 
-  <TabControl SelectedIndex="{Binding SelectedTabIndex}" TabStripPlacement="Left">
+  <ui:NavigationView x:Name="NavView"
+                     PaneDisplayMode="Left"
+                     IsBackButtonVisible="False"
+                     IsSettingsVisible="False"
+                     SelectionChanged="OnNavViewSelectionChanged">
 
-    <!-- ── Tab 0: Open ────────────────────────────────────────────────── -->
-    <TabItem Header="Open">
-      <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="12">
+    <ui:NavigationView.MenuItems>
+      <ui:NavigationViewItem Content="Open" Tag="0" x:Name="NavOpen">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.OpenFolder}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="Experiments" Tag="1" x:Name="NavExperiments"
+          IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Edit}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="Deployments" Tag="2" x:Name="NavDeployments"
+          IsEnabled="{Binding HasProject}">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Cloud}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="Secrets" Tag="3" x:Name="NavSecrets"
+          IsEnabled="{Binding HasProject}">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Permissions}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="Inputs" Tag="4" x:Name="NavInputs"
+          IsEnabled="{Binding HasProject}">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.BulletList}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="Run" Tag="5" x:Name="NavRun"
+          IsEnabled="{Binding HasProject}">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Play}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="Output" Tag="6" x:Name="NavOutput"
+          IsEnabled="{Binding IsOutputAvailable}">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.SlideShow}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+    </ui:NavigationView.MenuItems>
 
-        <!-- Directory picker -->
+    <ui:NavigationView.FooterMenuItems>
+      <ui:NavigationViewItem Content="Settings" Tag="7" x:Name="NavSettings">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Settings}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="License" Tag="8" x:Name="NavLicense">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.ProtectedDocument}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+      <ui:NavigationViewItem Content="About" Tag="9" x:Name="NavAbout">
+        <ui:NavigationViewItem.IconSource>
+          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Help}" />
+        </ui:NavigationViewItem.IconSource>
+      </ui:NavigationViewItem>
+    </ui:NavigationView.FooterMenuItems>
+
+    <!-- ── Content area ─────────────────────────────────────────────────── -->
+    <Grid>
+
+      <!-- ── Open ─────────────────────────────────────────────────────── -->
+      <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="12" IsVisible="{Binding IsOpenPage}">
+
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,8">
           <TextBox Grid.Column="0"
                    Text="{Binding ProjectDir}"
                    Watermark="Select or type project directory path…" />
-          <Button Grid.Column="1"
-                  Content="Browse…"
-                  Command="{Binding BrowseCommand}"
-                  Margin="6,0,0,0" />
-          <Button Grid.Column="2"
-                  Content="Load Config"
-                  Command="{Binding LoadConfigCommand}"
-                  Margin="6,0,0,0" />
+          <Button Grid.Column="1" Content="Browse…"    Command="{Binding BrowseCommand}"     Margin="6,0,0,0" />
+          <Button Grid.Column="2" Content="Load Config" Command="{Binding LoadConfigCommand}" Margin="6,0,0,0" />
         </Grid>
 
-        <!-- Config summary (visible when loaded) -->
         <Border Grid.Row="1"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8"
                 IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid RowDefinitions="Auto,Auto">
-            <TextBlock Grid.Row="0"
-                       FontWeight="Bold" FontSize="14"
-                       Text="{Binding Summary.ProjectName}" />
+            <TextBlock Grid.Row="0" FontWeight="Bold" FontSize="14" Text="{Binding Summary.ProjectName}" />
             <WrapPanel Grid.Row="1" Margin="0,6,0,0">
               <TextBlock Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
                          Margin="0,0,20,0"
                          IsVisible="{Binding Summary.Author, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-              <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}"
-                         Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"
-                         Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"
-                         Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"
-                         Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"
-                         Margin="0,0,20,0" />
-              <TextBlock Text="READ-ONLY"
-                         Foreground="OrangeRed" FontWeight="SemiBold"
+              <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}" Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"    Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"                   Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"                   Margin="0,0,20,0" />
+              <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"        Margin="0,0,20,0" />
+              <TextBlock Text="READ-ONLY" Foreground="#FF7043" FontWeight="SemiBold"
                          IsVisible="{Binding Summary.IsReadOnly}" />
             </WrapPanel>
           </Grid>
         </Border>
 
-        <!-- Error message from load -->
         <TextBlock Grid.Row="2"
-                   Text="{Binding ErrorMessage}"
-                   Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
+                   Text="{Binding ErrorMessage}" Foreground="#EF5350" FontWeight="SemiBold" TextWrapping="Wrap"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,8" />
 
-        <!-- Recent projects list -->
-        <Grid Grid.Row="3" RowDefinitions="Auto,*"
-              IsVisible="{Binding HasRecentProjects}">
-          <TextBlock Grid.Row="0"
-                     Text="Recent"
-                     FontWeight="SemiBold" FontSize="12"
+        <Grid Grid.Row="3" RowDefinitions="Auto,*" IsVisible="{Binding HasRecentProjects}">
+          <TextBlock Grid.Row="0" Text="Recent" FontWeight="SemiBold" FontSize="12"
                      Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                      Margin="0,0,0,4" />
-          <ItemsControl Grid.Row="1" ItemsSource="{Binding RecentProjects}"
-                        x:CompileBindings="False">
+          <ItemsControl Grid.Row="1" ItemsSource="{Binding RecentProjects}" x:CompileBindings="False">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Button Content="{Binding Name}"
-                        ToolTip.Tip="{Binding Path}"
+                <Button Content="{Binding Name}" ToolTip.Tip="{Binding Path}"
                         Command="{Binding $parent[ItemsControl].DataContext.OpenRecentCommand}"
                         CommandParameter="{Binding Path}"
-                        HorizontalAlignment="Left"
-                        HorizontalContentAlignment="Left"
+                        HorizontalAlignment="Left" HorizontalContentAlignment="Left"
                         Margin="0,0,0,4" />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -153,18 +185,14 @@
         </Grid>
 
       </Grid>
-    </TabItem>
 
-    <!-- ── Tab 1: Settings ────────────────────────────────────────────── -->
-    <TabItem Header="Experiments"
-             IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <ScrollViewer Margin="12" HorizontalScrollBarVisibility="Disabled">
+      <!-- ── Experiments ───────────────────────────────────────────────── -->
+      <ScrollViewer Margin="12" HorizontalScrollBarVisibility="Disabled"
+                    IsVisible="{Binding IsExperimentsPage}">
         <StackPanel DataContext="{Binding Settings}" Spacing="12" x:CompileBindings="False">
 
           <TextBlock Text="Experiment settings are embedded in project.json and cannot be edited here."
-                     Foreground="OrangeRed"
-                     IsVisible="{Binding !CanEdit}"
-                     TextWrapping="Wrap" />
+                     Foreground="#FF7043" IsVisible="{Binding !CanEdit}" TextWrapping="Wrap" />
 
           <StackPanel IsVisible="{Binding CanEdit}">
 
@@ -173,7 +201,7 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="Iterations" FontWeight="SemiBold" FontSize="13" />
                 <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto">
-                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Sets" VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="Sets"         VerticalAlignment="Center" />
                   <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Sets}" Minimum="1" Maximum="9999" />
                   <TextBlock Grid.Row="1" Grid.Column="0" Text="Reps per set" VerticalAlignment="Center" Margin="0,4,0,0" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Reps}" Minimum="1" Maximum="9999" Margin="0,4,0,0" />
@@ -255,32 +283,27 @@
                             ItemsSource="{x:Static vm:ExperimentSettingsViewModel.LogLevels}" />
                 </Grid>
                 <CheckBox Content="Omit null fields from manifest JSON"
-                          IsChecked="{Binding OmitNullFields}"
-                          Margin="0,4,0,0" />
+                          IsChecked="{Binding OmitNullFields}" Margin="0,4,0,0" />
               </StackPanel>
             </Border>
 
             <StackPanel Orientation="Horizontal" Spacing="12">
               <Button Content="Save settings" Command="{Binding SaveCommand}" />
-              <TextBlock Text="Saved ✓"
-                         Foreground="Green" FontWeight="SemiBold" VerticalAlignment="Center"
+              <TextBlock Text="Saved ✓" Foreground="#66BB6A" FontWeight="SemiBold" VerticalAlignment="Center"
                          IsVisible="{Binding SaveSuccess}" />
-              <TextBlock Text="{Binding SaveError}"
-                         Foreground="Red" VerticalAlignment="Center"
+              <TextBlock Text="{Binding SaveError}" Foreground="#EF5350" VerticalAlignment="Center"
                          IsVisible="{Binding SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
 
           </StackPanel>
         </StackPanel>
       </ScrollViewer>
-    </TabItem>
 
-    <!-- ── Tab 2: Deployments ────────────────────────────────────────── -->
-    <TabItem Header="Deployments" IsEnabled="{Binding HasProject}">
-      <ScrollViewer Margin="12">
+      <!-- ── Deployments ───────────────────────────────────────────────── -->
+      <ScrollViewer Margin="12" IsVisible="{Binding IsDeploymentsPage}">
         <StackPanel x:CompileBindings="False" Spacing="0">
 
-          <TextBlock Text="No deployments configured"
+          <TextBlock Text="No deployments configured."
                      IsVisible="{Binding !Deployments.HasItems}"
                      Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                      Margin="0,8" />
@@ -290,38 +313,23 @@
               <DataTemplate>
                 <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                         BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,10">
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto">
-
-                    <!-- Label + Mode badge -->
+                  <Grid RowDefinitions="Auto,Auto,Auto">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                      <TextBlock Grid.Column="0"
-                                 Text="{Binding Label}"
-                                 FontWeight="Bold" FontSize="14" />
+                      <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="Bold" FontSize="14" />
                       <Border Grid.Column="1"
                               Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
                               CornerRadius="3" Padding="6,2">
-                        <TextBlock Text="{Binding Mode}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                        <TextBlock Text="{Binding Mode}" FontSize="12" />
                       </Border>
                     </Grid>
-
-                    <!-- Endpoint -->
-                    <TextBlock Grid.Row="1"
-                               Text="{Binding Endpoint}"
-                               FontSize="12"
+                    <TextBlock Grid.Row="1" Text="{Binding Endpoint}" FontSize="12"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                IsVisible="{Binding Endpoint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                Margin="0,0,0,4" />
-
-                    <!-- Parameters -->
-                    <TextBlock Grid.Row="2"
-                               Text="{Binding ParameterSummary}"
-                               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                               FontSize="11"
+                    <TextBlock Grid.Row="2" Text="{Binding ParameterSummary}"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
                                IsVisible="{Binding ParameterSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                TextWrapping="Wrap" />
-
                   </Grid>
                 </Border>
               </DataTemplate>
@@ -330,14 +338,12 @@
 
         </StackPanel>
       </ScrollViewer>
-    </TabItem>
 
-    <!-- ── Tab 3: Secrets ─────────────────────────────────────────────── -->
-    <TabItem Header="Secrets" IsEnabled="{Binding HasProject}">
-      <ScrollViewer Margin="12">
+      <!-- ── Secrets ───────────────────────────────────────────────────── -->
+      <ScrollViewer Margin="12" IsVisible="{Binding IsSecretsPage}">
         <StackPanel x:CompileBindings="False" Spacing="12">
 
-          <TextBlock Text="No secrets file found (config/secrets.json)"
+          <TextBlock Text="No secrets file found (config/secrets.json)."
                      IsVisible="{Binding !Secrets.HasItems}"
                      Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                      Margin="0,8" />
@@ -351,20 +357,13 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Grid ColumnDefinitions="200,*,Auto" Margin="0,3,0,3">
-                      <TextBlock Grid.Column="0"
-                                 Text="{Binding Key}"
-                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                                 FontSize="12"
+                      <TextBlock Grid.Column="0" Text="{Binding Key}"
+                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
                                  VerticalAlignment="Center" />
-                      <TextBlock Grid.Column="1"
-                                 Text="{Binding DisplayValue}"
-                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                      <TextBlock Grid.Column="1" Text="{Binding DisplayValue}"
+                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
                                  VerticalAlignment="Center" />
-                      <ToggleButton Grid.Column="2"
-                                    Content="Show"
-                                    IsChecked="{Binding ShowValue}"
+                      <ToggleButton Grid.Column="2" Content="Show" IsChecked="{Binding ShowValue}"
                                     Padding="8,2" FontSize="11" />
                     </Grid>
                   </DataTemplate>
@@ -375,13 +374,11 @@
 
         </StackPanel>
       </ScrollViewer>
-    </TabItem>
 
-    <!-- ── Tab 4: Inputs ──────────────────────────────────────────────── -->
-    <TabItem Header="Inputs" IsEnabled="{Binding HasProject}">
-      <TabControl Margin="12,8,12,12" x:CompileBindings="False">
+      <!-- ── Inputs ────────────────────────────────────────────────────── -->
+      <TabControl Margin="12,8,12,12" x:CompileBindings="False"
+                  IsVisible="{Binding IsInputsPage}">
 
-        <!-- ── Inner tab: Texts ────────────────────────────────────────── -->
         <TabItem Header="Texts">
           <Grid Margin="0,8,0,0">
             <TextBlock Text="No texts loaded."
@@ -392,15 +389,14 @@
                       GridLinesVisibility="Horizontal"
                       IsVisible="{Binding Inputs.HasTexts}">
               <DataGrid.Columns>
-                <DataGridTextColumn Header="Label"    Binding="{Binding Label}"        Width="160" />
-                <DataGridTextColumn Header="Title"    Binding="{Binding Title}"         Width="*" />
-                <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}"  Width="80" />
+                <DataGridTextColumn Header="Label"    Binding="{Binding Label}"       Width="160" />
+                <DataGridTextColumn Header="Title"    Binding="{Binding Title}"        Width="*" />
+                <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}" Width="80" />
               </DataGrid.Columns>
             </DataGrid>
           </Grid>
         </TabItem>
 
-        <!-- ── Inner tab: Queries ─────────────────────────────────────── -->
         <TabItem Header="Queries">
           <Grid Margin="0,8,0,0">
             <TextBlock Text="No queries loaded."
@@ -419,7 +415,6 @@
           </Grid>
         </TabItem>
 
-        <!-- ── Inner tab: Prompts ─────────────────────────────────────── -->
         <TabItem Header="Prompts">
           <Grid Margin="0,8,0,0">
             <TextBlock Text="No prompts loaded."
@@ -438,88 +433,65 @@
         </TabItem>
 
       </TabControl>
-    </TabItem>
 
-    <!-- ── Tab 5: Run ─────────────────────────────────────────────────── -->
-    <TabItem Header="Run" IsEnabled="{Binding HasProject}">
-      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12">
+      <!-- ── Run ───────────────────────────────────────────────────────── -->
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12" IsVisible="{Binding IsRunPage}">
 
-        <!-- Project info panel -->
         <Border Grid.Row="0"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0">
-              <TextBlock FontWeight="Bold" FontSize="14"
-                         Text="{Binding Summary.ProjectName}" />
-              <TextBlock FontSize="11" Margin="0,2,0,6"
-                         Text="{Binding ProjectDir}"
+              <TextBlock FontWeight="Bold" FontSize="14" Text="{Binding Summary.ProjectName}" />
+              <TextBlock FontSize="12" Margin="0,2,0,6" Text="{Binding ProjectDir}"
                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
               <WrapPanel>
                 <TextBlock Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
                            Margin="0,0,20,0"
                            IsVisible="{Binding Summary.Author, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}"
-                           Margin="0,0,20,0" />
-                <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"
-                           Margin="0,0,20,0" />
-                <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"
-                           Margin="0,0,20,0" />
-                <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"
-                           Margin="0,0,20,0" />
-                <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"
-                           Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}" Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"    Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"                   Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"                   Margin="0,0,20,0" />
+                <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"        Margin="0,0,20,0" />
               </WrapPanel>
             </StackPanel>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="READ-ONLY — run not allowed"
-                         Foreground="OrangeRed" FontWeight="SemiBold"
+                         Foreground="#FF7043" FontWeight="SemiBold"
                          IsVisible="{Binding Summary.IsReadOnly}" />
               <StackPanel Orientation="Horizontal" Spacing="8"
                           IsVisible="{Binding !Summary.IsReadOnly}">
-                <Button Content="Run Experiment"
-                        Command="{Binding RunCommand}" />
-                <Button Content="Go to Output →"
-                        Command="{Binding GoToOutputCommand}"
+                <Button Content="Run Experiment"  Command="{Binding RunCommand}" />
+                <Button Content="Go to Output →"  Command="{Binding GoToOutputCommand}"
                         IsVisible="{Binding RunCompleted}" />
               </StackPanel>
             </StackPanel>
           </Grid>
         </Border>
 
-        <!-- Progress bar + Cancel -->
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto"
               IsVisible="{Binding IsRunning}" Margin="0,0,0,4">
-          <ProgressBar Grid.Column="0"
-                       Minimum="0"
-                       Maximum="{Binding ProgressTotal}"
-                       Value="{Binding ProgressCompleted}" />
-          <TextBlock Grid.Column="1"
-                     Text="{Binding ProgressCompleted}"
+          <ProgressBar Grid.Column="0" Minimum="0"
+                       Maximum="{Binding ProgressTotal}" Value="{Binding ProgressCompleted}" />
+          <TextBlock Grid.Column="1" Text="{Binding ProgressCompleted}"
                      Margin="8,0,6,0" VerticalAlignment="Center" />
-          <Button Grid.Column="2"
-                  Content="Cancel"
-                  Command="{Binding CancelCommand}" />
+          <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelCommand}" />
         </Grid>
 
-        <!-- Current operation -->
         <TextBlock Grid.Row="2"
-                   Text="{Binding CurrentOperation}"
-                   FontSize="11"
+                   Text="{Binding CurrentOperation}" FontSize="11"
                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                    IsVisible="{Binding CurrentOperation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,4" />
 
-        <!-- Log panel with filter toggles -->
         <Border Grid.Row="3"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4" Margin="0,0,0,6">
           <Grid RowDefinitions="Auto,*">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto"
                   Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-              <TextBlock Grid.Column="0"
-                         Text="Log" FontWeight="SemiBold"
-                         Margin="8,4" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="0" Text="Log" FontWeight="SemiBold" Margin="8,4" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="0,2,4,2">
                 <Button Content="All"  Command="{Binding SelectAllLogsCommand}"
                         Padding="6,2" FontSize="11" ToolTip.Tip="Show all levels" />
@@ -528,20 +500,16 @@
                 <Rectangle Width="1" Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                            Margin="4,2" VerticalAlignment="Stretch" />
                 <ToggleButton Classes="log-filter log-v" IsChecked="{Binding ShowVerbose}"
-                              Content="V" ToolTip.Tip="Verbose"
-                              Padding="6,2" FontSize="11"
+                              Content="V" ToolTip.Tip="Verbose" Padding="6,2" FontSize="11"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
                 <ToggleButton Classes="log-filter log-i" IsChecked="{Binding ShowInfo}"
-                              Content="I" ToolTip.Tip="Info"
-                              Padding="6,2" FontSize="11"
+                              Content="I" ToolTip.Tip="Info"    Padding="6,2" FontSize="11"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
                 <ToggleButton Classes="log-filter log-w" IsChecked="{Binding ShowWarning}"
-                              Content="W" ToolTip.Tip="Warning"
-                              Padding="6,2" FontSize="11"
+                              Content="W" ToolTip.Tip="Warning" Padding="6,2" FontSize="11"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
                 <ToggleButton Classes="log-filter log-e" IsChecked="{Binding ShowError}"
-                              Content="E" ToolTip.Tip="Error"
-                              Padding="6,2" FontSize="11"
+                              Content="E" ToolTip.Tip="Error"   Padding="6,2" FontSize="11"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
               </StackPanel>
             </Grid>
@@ -552,8 +520,7 @@
                   <DataTemplate x:DataType="vm:LogLine">
                     <TextBlock Text="{Binding Text}"
                                Foreground="{Binding Level, Converter={x:Static conv:LogLevelBrushConverter.Instance}}"
-                               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                               FontSize="11"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="11"
                                TextWrapping="NoWrap" />
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -562,27 +529,21 @@
           </Grid>
         </Border>
 
-        <!-- Error message -->
         <TextBlock Grid.Row="4"
-                   Text="{Binding ErrorMessage}"
-                   Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap"
+                   Text="{Binding ErrorMessage}" Foreground="#EF5350" FontWeight="SemiBold" TextWrapping="Wrap"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,6" />
 
       </Grid>
-    </TabItem>
 
-    <!-- ── Tab 6: Output ──────────────────────────────────────────────── -->
-    <TabItem Header="Output" IsEnabled="{Binding IsOutputAvailable}">
-      <Grid RowDefinitions="Auto,*" Margin="12,8,12,12">
+      <!-- ── Output ────────────────────────────────────────────────────── -->
+      <Grid RowDefinitions="Auto,*" Margin="12,8,12,12" IsVisible="{Binding IsOutputPage}">
 
-        <!-- Page-level controls: run selector + open folder -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8"
                     x:CompileBindings="False">
           <ComboBox ItemsSource="{Binding AvailableRuns}"
                     SelectedItem="{Binding SelectedRunOption}"
-                    IsVisible="{Binding HasRunSelector}"
-                    MinWidth="220">
+                    IsVisible="{Binding HasRunSelector}" MinWidth="220">
             <ComboBox.ItemTemplate>
               <DataTemplate>
                 <TextBlock Text="{Binding Label}" />
@@ -594,49 +555,35 @@
                   IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
 
-        <!-- Inner tabs: Table | Charts -->
         <TabControl Grid.Row="1" x:CompileBindings="False">
 
-          <!-- ── Inner tab: Table ──────────────────────────────────────── -->
           <TabItem Header="Table">
             <ScrollViewer Padding="0,8,0,0">
               <StackPanel Spacing="8">
-
                 <TextBlock Text="No results yet."
                            IsVisible="{Binding !HasResults}"
                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-
                 <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                        BorderThickness="1" CornerRadius="4"
-                        IsVisible="{Binding HasResults}">
+                        BorderThickness="1" CornerRadius="4" IsVisible="{Binding HasResults}">
                   <DataGrid ItemsSource="{Binding Results}"
-                            AutoGenerateColumns="False"
-                            IsReadOnly="True"
+                            AutoGenerateColumns="False" IsReadOnly="True"
                             GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                      <DataGridTextColumn Header="Deployment"
-                                          Binding="{Binding Deployment}" Width="*" />
-                      <DataGridTextColumn Header="Success"
-                                          Binding="{Binding SuccessCount}" Width="80" />
-                      <DataGridTextColumn Header="Errors"
-                                          Binding="{Binding ErrorCount}" Width="80" />
-                      <DataGridTextColumn Header="Total"
-                                          Binding="{Binding TotalRuns}" Width="70" />
-                      <DataGridTextColumn Header="Avg ms"
-                                          Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
+                      <DataGridTextColumn Header="Deployment" Binding="{Binding Deployment}" Width="*" />
+                      <DataGridTextColumn Header="Success"    Binding="{Binding SuccessCount}" Width="80" />
+                      <DataGridTextColumn Header="Errors"     Binding="{Binding ErrorCount}"   Width="80" />
+                      <DataGridTextColumn Header="Total"      Binding="{Binding TotalRuns}"    Width="70" />
+                      <DataGridTextColumn Header="Avg ms"     Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
                     </DataGrid.Columns>
                   </DataGrid>
                 </Border>
-
               </StackPanel>
             </ScrollViewer>
           </TabItem>
 
-          <!-- ── Inner tab: Charts ─────────────────────────────────────── -->
           <TabItem Header="Charts" IsEnabled="{Binding Charts.HasData}">
             <ScrollViewer Padding="0,8,0,0">
               <StackPanel Spacing="12" Margin="0,0,0,8">
-
                 <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                         BorderThickness="1" CornerRadius="4" Padding="8,6">
                   <Grid RowDefinitions="Auto,*">
@@ -645,7 +592,6 @@
                     <sp:AvaPlot Grid.Row="1" x:Name="SuccessChart" Height="300" />
                   </Grid>
                 </Border>
-
                 <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                         BorderThickness="1" CornerRadius="4" Padding="8,6">
                   <Grid RowDefinitions="Auto,*">
@@ -654,15 +600,91 @@
                     <sp:AvaPlot Grid.Row="1" x:Name="DurationChart" Height="300" />
                   </Grid>
                 </Border>
-
               </StackPanel>
             </ScrollViewer>
           </TabItem>
 
         </TabControl>
-
       </Grid>
-    </TabItem>
 
-  </TabControl>
+      <!-- ── Settings (stub) ───────────────────────────────────────────── -->
+      <StackPanel Margin="12" Spacing="8" IsVisible="{Binding IsSettingsPage}">
+        <TextBlock Text="Settings" FontWeight="Bold" FontSize="18" />
+        <TextBlock Text="Application settings coming soon."
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+      </StackPanel>
+
+      <!-- ── License ───────────────────────────────────────────────────── -->
+      <ScrollViewer Margin="12" IsVisible="{Binding IsLicensePage}">
+        <StackPanel Spacing="12" MaxWidth="740">
+          <TextBlock Text="License" FontWeight="Bold" FontSize="18" />
+          <TextBlock Text="PolyForm Strict License 1.0.0" FontWeight="SemiBold" FontSize="14" />
+          <TextBlock Text="https://polyformproject.org/licenses/strict/1.0.0"
+                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+
+          <TextBlock Text="Acceptance" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses." />
+
+          <TextBlock Text="Copyright License" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose, other than distributing the software or making changes or new works based on the software." />
+
+          <TextBlock Text="Patent License" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software." />
+
+          <TextBlock Text="Noncommercial Purposes" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="Any noncommercial purpose is a permitted purpose." />
+
+          <TextBlock Text="Personal Uses" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose." />
+
+          <TextBlock Text="Noncommercial Organizations" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding." />
+
+          <TextBlock Text="Fair Use" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text='You may have "fair use" rights for the software under the law. These terms do not limit them.' />
+
+          <TextBlock Text="No Other Rights" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else. These terms do not imply any other licenses." />
+
+          <TextBlock Text="Patent Defense" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company." />
+
+          <TextBlock Text="Violations" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice. Otherwise, all your licenses end immediately." />
+
+          <TextBlock Text="No Liability" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim." />
+
+          <TextBlock Text="Definitions" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="The licensor is the individual or entity offering these terms, and the software is the software the licensor makes available under these terms. You refers to the individual or entity agreeing to these terms. Your company is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization. Control means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise. Control can be direct or indirect. Your licenses are all the licenses granted to you for the software under these terms. Use means anything you do with the software requiring one of your licenses." />
+
+          <TextBlock Text="© PolyForm Project Inc."
+                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                     Margin="0,8,0,0" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ── About ─────────────────────────────────────────────────────── -->
+      <StackPanel Margin="12" Spacing="8" IsVisible="{Binding IsAboutPage}">
+        <TextBlock Text="AI Copyright Reproducibility" FontWeight="Bold" FontSize="18" />
+        <TextBlock TextWrapping="Wrap"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   Text="A tool for running and analysing AI copyright reproducibility experiments." />
+      </StackPanel>
+
+    </Grid>
+  </ui:NavigationView>
+
 </Window>

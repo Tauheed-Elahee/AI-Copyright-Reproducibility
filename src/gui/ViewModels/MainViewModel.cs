@@ -157,8 +157,32 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public int SelectedTabIndex
         {
             get => _selectedTabIndex;
-            set => this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
+                this.RaisePropertyChanged(nameof(IsOpenPage));
+                this.RaisePropertyChanged(nameof(IsExperimentsPage));
+                this.RaisePropertyChanged(nameof(IsDeploymentsPage));
+                this.RaisePropertyChanged(nameof(IsSecretsPage));
+                this.RaisePropertyChanged(nameof(IsInputsPage));
+                this.RaisePropertyChanged(nameof(IsRunPage));
+                this.RaisePropertyChanged(nameof(IsOutputPage));
+                this.RaisePropertyChanged(nameof(IsSettingsPage));
+                this.RaisePropertyChanged(nameof(IsLicensePage));
+                this.RaisePropertyChanged(nameof(IsAboutPage));
+            }
         }
+
+        public bool IsOpenPage        => _selectedTabIndex == 0;
+        public bool IsExperimentsPage => _selectedTabIndex == 1;
+        public bool IsDeploymentsPage => _selectedTabIndex == 2;
+        public bool IsSecretsPage     => _selectedTabIndex == 3;
+        public bool IsInputsPage      => _selectedTabIndex == 4;
+        public bool IsRunPage         => _selectedTabIndex == 5;
+        public bool IsOutputPage      => _selectedTabIndex == 6;
+        public bool IsSettingsPage    => _selectedTabIndex == 7;
+        public bool IsLicensePage     => _selectedTabIndex == 8;
+        public bool IsAboutPage       => _selectedTabIndex == 9;
 
         public bool ShowVerbose
         {
