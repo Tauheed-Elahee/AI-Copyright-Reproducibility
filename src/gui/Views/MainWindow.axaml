@@ -156,7 +156,7 @@
     </TabItem>
 
     <!-- ── Tab 1: Settings ────────────────────────────────────────────── -->
-    <TabItem Header="Settings"
+    <TabItem Header="Experiments"
              IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
       <ScrollViewer Margin="12" HorizontalScrollBarVisibility="Disabled">
         <StackPanel DataContext="{Binding Settings}" Spacing="12" x:CompileBindings="False">
