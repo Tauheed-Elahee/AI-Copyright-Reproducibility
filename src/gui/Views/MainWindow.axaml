@@ -59,73 +59,73 @@
     </Style>
   </Window.Styles>
 
-  <ui:NavigationView x:Name="NavView"
+  <ui:FANavigationView x:Name="NavView"
                      PaneDisplayMode="Left"
                      IsBackButtonVisible="False"
                      IsSettingsVisible="False"
                      SelectionChanged="OnNavViewSelectionChanged">
 
-    <ui:NavigationView.MenuItems>
-      <ui:NavigationViewItem Content="Open" Tag="0" x:Name="NavOpen">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.OpenFolder}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="Experiments" Tag="1" x:Name="NavExperiments"
+    <ui:FANavigationView.MenuItems>
+      <ui:FANavigationViewItem Content="Open" Tag="0" x:Name="NavOpen">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.OpenFolder}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Experiments" Tag="1" x:Name="NavExperiments"
           IsEnabled="{Binding Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Edit}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="Deployments" Tag="2" x:Name="NavDeployments"
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.Edit}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Deployments" Tag="2" x:Name="NavDeployments"
           IsEnabled="{Binding HasProject}">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Cloud}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="Secrets" Tag="3" x:Name="NavSecrets"
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.Cloud}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Secrets" Tag="3" x:Name="NavSecrets"
           IsEnabled="{Binding HasProject}">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Permissions}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="Inputs" Tag="4" x:Name="NavInputs"
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.Permissions}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Inputs" Tag="4" x:Name="NavInputs"
           IsEnabled="{Binding HasProject}">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.BulletList}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="Run" Tag="5" x:Name="NavRun"
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.BulletList}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Run" Tag="5" x:Name="NavRun"
           IsEnabled="{Binding HasProject}">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Play}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="Output" Tag="6" x:Name="NavOutput"
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.Play}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Output" Tag="6" x:Name="NavOutput"
           IsEnabled="{Binding IsOutputAvailable}">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.SlideShow}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-    </ui:NavigationView.MenuItems>
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.SlideShow}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+    </ui:FANavigationView.MenuItems>
 
-    <ui:NavigationView.FooterMenuItems>
-      <ui:NavigationViewItem Content="Settings" Tag="7" x:Name="NavSettings">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Settings}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="License" Tag="8" x:Name="NavLicense">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.ProtectedDocument}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-      <ui:NavigationViewItem Content="About" Tag="9" x:Name="NavAbout">
-        <ui:NavigationViewItem.IconSource>
-          <ui:SymbolIconSource Symbol="{x:Static ui:Symbol.Help}" />
-        </ui:NavigationViewItem.IconSource>
-      </ui:NavigationViewItem>
-    </ui:NavigationView.FooterMenuItems>
+    <ui:FANavigationView.FooterMenuItems>
+      <ui:FANavigationViewItem Content="Settings" Tag="7" x:Name="NavSettings">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.Settings}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="License" Tag="8" x:Name="NavLicense">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.ProtectedDocument}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="About" Tag="9" x:Name="NavAbout">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="{x:Static ui:FASymbol.Help}" />
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+    </ui:FANavigationView.FooterMenuItems>
 
     <!-- ── Content area ─────────────────────────────────────────────────── -->
     <Grid>
@@ -138,7 +138,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,8">
           <TextBox Grid.Column="0"
                    Text="{Binding ProjectDir}"
-                   Watermark="Select or type project directory path…" />
+                   PlaceholderText="Select or type project directory path…" />
           <Button Grid.Column="1" Content="Browse…"    Command="{Binding BrowseCommand}"     Margin="6,0,0,0" />
           <Button Grid.Column="2" Content="Load Config" Command="{Binding LoadConfigCommand}" Margin="6,0,0,0" />
         </Grid>
@@ -760,6 +760,6 @@
       </StackPanel>
 
     </Grid>
-  </ui:NavigationView>
+  </ui:FANavigationView>
 
 </Window>

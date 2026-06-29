@@ -33,10 +33,10 @@ namespace AICopyrightReproducibility.Gui.Views
             SyncNavViewSelection(vm.SelectedTabIndex);
         }
 
-        private void OnNavViewSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs e)
+        private void OnNavViewSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs e)
         {
             if (_suppressNavSync) return;
-            if (e.SelectedItem is NavigationViewItem item &&
+            if (e.SelectedItem is FANavigationViewItem item &&
                 item.Tag is string tagStr &&
                 int.TryParse(tagStr, out int idx) &&
                 DataContext is MainViewModel vm)
@@ -51,12 +51,12 @@ namespace AICopyrightReproducibility.Gui.Views
             _suppressNavSync = false;
         }
 
-        private NavigationViewItem? FindNavItem(int idx)
+        private FANavigationViewItem? FindNavItem(int idx)
         {
             var tag = idx.ToString();
-            foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>())
+            foreach (var item in NavView.MenuItems.OfType<FANavigationViewItem>())
                 if (item.Tag as string == tag) return item;
-            foreach (var item in NavView.FooterMenuItems.OfType<NavigationViewItem>())
+            foreach (var item in NavView.FooterMenuItems.OfType<FANavigationViewItem>())
                 if (item.Tag as string == tag) return item;
             return null;
         }
