@@ -132,6 +132,28 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _settings, value);
         }
 
+        private DeploymentsViewModel? _deployments;
+        private SecretsViewModel?     _secrets;
+        private InputsViewModel?      _inputs;
+
+        public DeploymentsViewModel? Deployments
+        {
+            get => _deployments;
+            private set => this.RaiseAndSetIfChanged(ref _deployments, value);
+        }
+
+        public SecretsViewModel? Secrets
+        {
+            get => _secrets;
+            private set => this.RaiseAndSetIfChanged(ref _secrets, value);
+        }
+
+        public InputsViewModel? Inputs
+        {
+            get => _inputs;
+            private set => this.RaiseAndSetIfChanged(ref _inputs, value);
+        }
+
         public int SelectedTabIndex
         {
             get => _selectedTabIndex;
@@ -250,7 +272,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 },
                 this.WhenAnyValue(x => x.OutputDir).Select(d => d != null));
 
-            GoToOutputCommand     = ReactiveCommand.Create(() => { SelectedTabIndex = 3; });
+            GoToOutputCommand     = ReactiveCommand.Create(() => { SelectedTabIndex = 6; });
             SelectAllLogsCommand  = ReactiveCommand.Create(() => SetAllFilters(true));
             SelectNoneLogsCommand = ReactiveCommand.Create(() => SetAllFilters(false));
             OpenRecentCommand     = ReactiveCommand.CreateFromTask<string>(ExecuteOpenRecent);
@@ -281,18 +303,20 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 ErrorMessage = null;
                 ProgressTotal = Math.Max(Summary.TotalRuns, 1);
 
-                var (settingsVm, previousRuns) = await Task.Run(() =>
+                var result = await Task.Run(() =>
                 {
                     RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
                         File.ReadAllText(System.IO.Path.Combine(ProjectDir, "project.json")),
                         ProjectLoader.ReadOpts)!;
                     string configLocDir = System.IO.Path.Combine(ProjectDir, cfg.Project.Fs.Config.Dir);
+                    string inputLocDir  = System.IO.Path.Combine(ProjectDir, cfg.Project.Fs.Input.Dir);
 
+                    // ── Experiment settings ───────────────────────────────────
                     ExperimentConfig expCfg = cfg.Experiment;
                     string? expFilePath = null;
-                    if (cfg.Project.Fs.Config.Files?.Experiment is { } f)
+                    if (cfg.Project.Fs.Config.Files?.Experiment is { } ef)
                     {
-                        string p = System.IO.Path.IsPathRooted(f) ? f : System.IO.Path.Combine(configLocDir, f);
+                        string p = System.IO.Path.IsPathRooted(ef) ? ef : System.IO.Path.Combine(configLocDir, ef);
                         if (File.Exists(p))
                         {
                             expCfg = JsonSerializer.Deserialize<ExperimentConfig>(
@@ -300,22 +324,115 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                             expFilePath = p;
                         }
                     }
+                    var settingsVm = new ExperimentSettingsViewModel();
+                    settingsVm.LoadFrom(expCfg, expFilePath);
 
-                    var vm = new ExperimentSettingsViewModel();
-                    vm.LoadFrom(expCfg, expFilePath);
+                    // ── Deployments ───────────────────────────────────────────
+                    List<DeploymentConfig> deployments = cfg.Deployments;
+                    if (cfg.Project.Fs.Config.Files?.Deployments is { } df)
+                    {
+                        string p = System.IO.Path.IsPathRooted(df) ? df : System.IO.Path.Combine(configLocDir, df);
+                        if (File.Exists(p))
+                        {
+                            using var doc = JsonDocument.Parse(File.ReadAllText(p));
+                            deployments = doc.RootElement.GetProperty("deployments")
+                                .EnumerateArray()
+                                .Select(e => JsonSerializer.Deserialize<DeploymentConfig>(
+                                    e.GetRawText(), ProjectLoader.ReadOpts)!)
+                                .ToList();
+                        }
+                    }
 
+                    // ── Secrets ───────────────────────────────────────────────
+                    string secretsPath = System.IO.Path.Combine(configLocDir, "secrets.json");
+                    SecretsConfig secretsCfg = File.Exists(secretsPath)
+                        ? JsonSerializer.Deserialize<SecretsConfig>(
+                              File.ReadAllText(secretsPath), ProjectLoader.ReadOpts) ?? new()
+                        : new();
+
+                    // ── Queries ───────────────────────────────────────────────
+                    List<QueryConfig> queries = cfg.Queries;
+                    if (cfg.Project.Fs.Input.Files?.Queries is { } qf)
+                    {
+                        string p = System.IO.Path.IsPathRooted(qf) ? qf : System.IO.Path.Combine(inputLocDir, qf);
+                        if (File.Exists(p))
+                        {
+                            using var doc = JsonDocument.Parse(File.ReadAllText(p));
+                            queries = doc.RootElement.GetProperty("queries")
+                                .EnumerateArray()
+                                .Select(e => JsonSerializer.Deserialize<QueryConfig>(
+                                    e.GetRawText(), ProjectLoader.ReadOpts)!)
+                                .ToList();
+                        }
+                    }
+
+                    // ── Texts ─────────────────────────────────────────────────
+                    List<TextDbEntry> texts = new();
+                    if (cfg.Project.Fs.Input.Files?.Texts is { } tf)
+                    {
+                        string p = System.IO.Path.IsPathRooted(tf) ? tf : System.IO.Path.Combine(inputLocDir, tf);
+                        if (File.Exists(p))
+                        {
+                            using var doc = JsonDocument.Parse(File.ReadAllText(p));
+                            texts = doc.RootElement.GetProperty("texts")
+                                .EnumerateArray()
+                                .Select(e => JsonSerializer.Deserialize<TextDbEntry>(
+                                    e.GetRawText(), ProjectLoader.ReadOpts)!)
+                                .ToList();
+                        }
+                    }
+
+                    // ── Prompts ───────────────────────────────────────────────
+                    List<PromptEntry> prompts = new();
+                    if (cfg.Project.Fs.Input.Files?.Prompts is { } pf)
+                    {
+                        string p = System.IO.Path.IsPathRooted(pf) ? pf : System.IO.Path.Combine(inputLocDir, pf);
+                        if (File.Exists(p))
+                        {
+                            using var doc = JsonDocument.Parse(File.ReadAllText(p));
+                            prompts = doc.RootElement.GetProperty("prompts")
+                                .EnumerateArray()
+                                .Select(e => JsonSerializer.Deserialize<PromptEntry>(
+                                    e.GetRawText(), ProjectLoader.ReadOpts)!)
+                                .ToList();
+                        }
+                    }
+
+                    // ── Output dir scan ───────────────────────────────────────
                     string outputBase = System.IO.Path.Combine(ProjectDir, cfg.Project.Fs.Output.Dir);
                     List<RunOption> runs = ScanForPreviousRuns(outputBase);
-                    return (vm, runs);
+
+                    return new
+                    {
+                        Settings    = settingsVm,
+                        PreviousRuns = runs,
+                        Deployments = deployments,
+                        Secrets     = secretsCfg,
+                        Queries     = queries,
+                        Texts       = texts,
+                        Prompts     = prompts
+                    };
                 });
 
-                Settings = settingsVm;
+                Settings = result.Settings;
+
+                var deploymentsVm = new DeploymentsViewModel();
+                deploymentsVm.LoadFrom(result.Deployments);
+                Deployments = deploymentsVm;
+
+                var secretsVm = new SecretsViewModel();
+                secretsVm.LoadFrom(result.Secrets);
+                Secrets = secretsVm;
+
+                var inputsVm = new InputsViewModel();
+                inputsVm.LoadFrom(result.Queries, result.Texts, result.Prompts);
+                Inputs = inputsVm;
 
                 _currentRunResults   = new List<DeploymentResultRow>();
                 _currentRunOutputDir = null;
                 AvailableRuns.Clear();
                 AvailableRuns.Add(new RunOption("Current run", null));
-                foreach (var run in previousRuns) AvailableRuns.Add(run);
+                foreach (var run in result.PreviousRuns) AvailableRuns.Add(run);
                 SelectedRunOption = AvailableRuns[0];
 
                 SaveRecentProjects();

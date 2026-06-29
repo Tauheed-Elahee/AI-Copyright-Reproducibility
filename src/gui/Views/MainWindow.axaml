@@ -274,7 +274,179 @@
       </ScrollViewer>
     </TabItem>
 
-    <!-- ── Tab 2: Run ─────────────────────────────────────────────────── -->
+    <!-- ── Tab 2: Deployments ────────────────────────────────────────── -->
+    <TabItem Header="Deployments" IsEnabled="{Binding HasProject}">
+      <ScrollViewer Margin="12">
+        <StackPanel x:CompileBindings="False" Spacing="0">
+
+          <TextBlock Text="No deployments configured"
+                     IsVisible="{Binding !Deployments.HasItems}"
+                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                     Margin="0,8" />
+
+          <ItemsControl ItemsSource="{Binding Deployments.Items}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,10">
+                  <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+
+                    <!-- Label + Mode badge -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Label}"
+                                 FontWeight="Bold" FontSize="14" />
+                      <Border Grid.Column="1"
+                              Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                              CornerRadius="3" Padding="6,2">
+                        <TextBlock Text="{Binding Mode}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                      </Border>
+                    </Grid>
+
+                    <!-- Endpoint -->
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding Endpoint}"
+                               FontSize="12"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                               IsVisible="{Binding Endpoint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Margin="0,0,0,4" />
+
+                    <!-- Parameters -->
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding ParameterSummary}"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                               FontSize="11"
+                               IsVisible="{Binding ParameterSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               TextWrapping="Wrap" />
+
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+    <!-- ── Tab 3: Secrets ─────────────────────────────────────────────── -->
+    <TabItem Header="Secrets" IsEnabled="{Binding HasProject}">
+      <ScrollViewer Margin="12">
+        <StackPanel x:CompileBindings="False" Spacing="12">
+
+          <TextBlock Text="No secrets file found (config/secrets.json)"
+                     IsVisible="{Binding !Secrets.HasItems}"
+                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                     Margin="0,8" />
+
+          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  BorderThickness="1" CornerRadius="4" Padding="10,8"
+                  IsVisible="{Binding Secrets.HasItems}">
+            <StackPanel>
+              <TextBlock Text="Keys" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" />
+              <ItemsControl ItemsSource="{Binding Secrets.Items}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="200,*,Auto" Margin="0,3,0,3">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Key}"
+                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                 FontSize="12"
+                                 VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding DisplayValue}"
+                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                 VerticalAlignment="Center" />
+                      <ToggleButton Grid.Column="2"
+                                    Content="Show"
+                                    IsChecked="{Binding ShowValue}"
+                                    Padding="8,2" FontSize="11" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+    <!-- ── Tab 4: Inputs ──────────────────────────────────────────────── -->
+    <TabItem Header="Inputs" IsEnabled="{Binding HasProject}">
+      <ScrollViewer Margin="12">
+        <StackPanel x:CompileBindings="False" Spacing="12">
+
+          <!-- Texts -->
+          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  BorderThickness="1" CornerRadius="4" Padding="10,8"
+                  IsVisible="{Binding Inputs.HasTexts}">
+            <Grid RowDefinitions="Auto,*">
+              <TextBlock Grid.Row="0" Text="Texts" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+              <DataGrid Grid.Row="1"
+                        ItemsSource="{Binding Inputs.Texts}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        GridLinesVisibility="Horizontal" MaxHeight="260">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="160" />
+                  <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" />
+                  <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}" Width="80" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+          </Border>
+
+          <!-- Queries -->
+          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  BorderThickness="1" CornerRadius="4" Padding="10,8"
+                  IsVisible="{Binding Inputs.HasQueries}">
+            <Grid RowDefinitions="Auto,*">
+              <TextBlock Grid.Row="0" Text="Queries" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+              <DataGrid Grid.Row="1"
+                        ItemsSource="{Binding Inputs.Queries}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        GridLinesVisibility="Horizontal" MaxHeight="260">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="160" />
+                  <DataGridTextColumn Header="Types" Binding="{Binding Types}" Width="160" />
+                  <DataGridTextColumn Header="User prompt" Binding="{Binding UserPromptPreview}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+          </Border>
+
+          <!-- Prompts -->
+          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  BorderThickness="1" CornerRadius="4" Padding="10,8"
+                  IsVisible="{Binding Inputs.HasPrompts}">
+            <Grid RowDefinitions="Auto,*">
+              <TextBlock Grid.Row="0" Text="Prompts" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+              <DataGrid Grid.Row="1"
+                        ItemsSource="{Binding Inputs.Prompts}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        GridLinesVisibility="Horizontal" MaxHeight="260">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Text" Binding="{Binding TextLabel}" Width="160" />
+                  <DataGridTextColumn Header="Queries" Binding="{Binding Queries}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+          </Border>
+
+          <TextBlock Text="No inputs loaded (check project.json fs.input.files)"
+                     IsVisible="{Binding !Inputs.HasTexts}"
+                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                     Margin="0,4" />
+
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+    <!-- ── Tab 5: Run ─────────────────────────────────────────────────── -->
     <TabItem Header="Run" IsEnabled="{Binding HasProject}">
       <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12">
 
@@ -406,7 +578,7 @@
       </Grid>
     </TabItem>
 
-    <!-- ── Tab 3: Output ──────────────────────────────────────────────── -->
+    <!-- ── Tab 6: Output ──────────────────────────────────────────────── -->
     <TabItem Header="Output" IsEnabled="{Binding IsOutputAvailable}">
       <Grid RowDefinitions="Auto,Auto,*" Margin="12">
 
