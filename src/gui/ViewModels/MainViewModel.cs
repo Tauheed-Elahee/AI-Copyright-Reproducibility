@@ -22,6 +22,11 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 {
     public sealed record RecentProjectEntry(string Path, string Name, DateTimeOffset LastOpened);
 
+    public sealed record RunOption(string Label, string? OutputDirectory)
+    {
+        public bool IsCurrent => OutputDirectory is null;
+    }
+
     public sealed class MainViewModel : ViewModelBase
     {
         public enum RunState { Idle, Running, Completed, Failed }
@@ -43,6 +48,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         private bool _showError   = true;
 
         private readonly List<LogLine> _allLogLines = new();
+
+        private List<DeploymentResultRow> _currentRunResults    = new();
+        private string?                   _currentRunOutputDir;
+        private RunOption?                _selectedRunOption;
 
         private CancellationTokenSource? _runCts;
         private Func<Task<string?>>?     _browseDelegate;
@@ -156,7 +165,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public bool IsRunning         => _state == RunState.Running;
         public bool HasResults        => Results.Count > 0;
         public bool HasProject        => _summary != null;
-        public bool IsOutputAvailable => _state != RunState.Idle;
+        public bool IsOutputAvailable => _state != RunState.Idle || AvailableRuns.Count > 1;
+        public bool HasRunSelector    => AvailableRuns.Count > 1;
         public bool RunCompleted      => _state == RunState.Completed || _state == RunState.Failed;
         public bool HasRecentProjects => RecentProjects.Count > 0;
 
@@ -171,6 +181,27 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public ObservableCollection<LogLine>             LogLines       { get; } = new();
         public ObservableCollection<DeploymentResultRow> Results        { get; } = new();
         public ObservableCollection<RecentProjectEntry>  RecentProjects { get; } = new();
+        public ObservableCollection<RunOption>           AvailableRuns  { get; } = new();
+
+        public RunOption? SelectedRunOption
+        {
+            get => _selectedRunOption;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedRunOption, value);
+                Results.Clear();
+                if (value is null || value.IsCurrent)
+                {
+                    OutputDir = _currentRunOutputDir;
+                    foreach (var row in _currentRunResults) Results.Add(row);
+                }
+                else
+                {
+                    OutputDir = value.OutputDirectory;
+                    _ = LoadHistoricalRunAsync(value.OutputDirectory!);
+                }
+            }
+        }
 
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> BrowseCommand           { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> LoadConfigCommand       { get; }
@@ -184,8 +215,13 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
         public MainViewModel()
         {
-            Results.CollectionChanged       += (_, _) => this.RaisePropertyChanged(nameof(HasResults));
+            Results.CollectionChanged        += (_, _) => this.RaisePropertyChanged(nameof(HasResults));
             RecentProjects.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasRecentProjects));
+            AvailableRuns.CollectionChanged  += (_, _) =>
+            {
+                this.RaisePropertyChanged(nameof(IsOutputAvailable));
+                this.RaisePropertyChanged(nameof(HasRunSelector));
+            };
 
             LoadRecentProjects();
 
@@ -245,7 +281,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 ErrorMessage = null;
                 ProgressTotal = Math.Max(Summary.TotalRuns, 1);
 
-                Settings = await Task.Run(() =>
+                var (settingsVm, previousRuns) = await Task.Run(() =>
                 {
                     RunConfig cfg = JsonSerializer.Deserialize<RunConfig>(
                         File.ReadAllText(System.IO.Path.Combine(ProjectDir, "project.json")),
@@ -267,8 +303,20 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
                     var vm = new ExperimentSettingsViewModel();
                     vm.LoadFrom(expCfg, expFilePath);
-                    return vm;
+
+                    string outputBase = System.IO.Path.Combine(ProjectDir, cfg.Project.Fs.Output.Dir);
+                    List<RunOption> runs = ScanForPreviousRuns(outputBase);
+                    return (vm, runs);
                 });
+
+                Settings = settingsVm;
+
+                _currentRunResults   = new List<DeploymentResultRow>();
+                _currentRunOutputDir = null;
+                AvailableRuns.Clear();
+                AvailableRuns.Add(new RunOption("Current run", null));
+                foreach (var run in previousRuns) AvailableRuns.Add(run);
+                SelectedRunOption = AvailableRuns[0];
 
                 SaveRecentProjects();
             }
@@ -404,6 +452,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
+                        _currentRunResults   = rows;
+                        _currentRunOutputDir = resolvedOutDir;
+                        AvailableRuns.Insert(1, new RunOption(FormatStamp(stamp), resolvedOutDir));
+
                         foreach (var row in rows) Results.Add(row);
                         OutputDir        = resolvedOutDir;
                         CurrentOperation = null;
@@ -515,6 +567,70 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 foreach (var e in entries) RecentProjects.Add(e);
             }
             catch { /* silently ignore */ }
+        }
+
+        // ── Output history helpers ────────────────────────────────────────────
+
+        private static List<RunOption> ScanForPreviousRuns(string outputBase)
+        {
+            var runs = new List<RunOption>();
+            if (!Directory.Exists(outputBase)) return runs;
+
+            foreach (string dir in Directory.GetDirectories(outputBase).OrderByDescending(d => d))
+            {
+                string name = System.IO.Path.GetFileName(dir);
+                if (DateTime.TryParseExact(name, "yyyyMMdd-HHmmss",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out _))
+                    runs.Add(new RunOption(FormatStamp(name), dir));
+            }
+            return runs;
+        }
+
+        private static string FormatStamp(string stamp)
+        {
+            if (DateTime.TryParseExact(stamp, "yyyyMMdd-HHmmss",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var dt))
+                return dt.ToString("yyyy-MM-dd HH:mm:ss");
+            return stamp;
+        }
+
+        private async Task LoadHistoricalRunAsync(string outDir)
+        {
+            try
+            {
+                string manifestPath = System.IO.Path.Combine(outDir, "manifest.json");
+                if (!File.Exists(manifestPath)) return;
+
+                var rows = await Task.Run(() =>
+                {
+                    var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var records = JsonSerializer.Deserialize<List<RunRecord>>(
+                        File.ReadAllText(manifestPath), opts) ?? new();
+                    return records
+                        .GroupBy(r => r.Deployment)
+                        .Select(g => new DeploymentResultRow
+                        {
+                            Deployment    = g.Key,
+                            SuccessCount  = g.Count(r => r.Status == 200),
+                            ErrorCount    = g.Count(r => r.Status != 200),
+                            AvgDurationMs = g.Any() ? g.Average(r => r.DurationMs) : 0
+                        })
+                        .OrderBy(r => r.Deployment)
+                        .ToList();
+                });
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (_selectedRunOption?.OutputDirectory == outDir)
+                    {
+                        Results.Clear();
+                        foreach (var row in rows) Results.Add(row);
+                    }
+                });
+            }
+            catch { /* silently ignore corrupt or missing manifests */ }
         }
 
         private static SemanticVersion GetGuiVersion()

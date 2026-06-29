@@ -408,17 +408,33 @@
 
     <!-- ── Tab 3: Output ──────────────────────────────────────────────── -->
     <TabItem Header="Output" IsEnabled="{Binding IsOutputAvailable}">
-      <Grid RowDefinitions="Auto,*" Margin="12">
+      <Grid RowDefinitions="Auto,Auto,*" Margin="12">
+
+        <!-- Run selector — only visible when there are historical runs to choose from -->
+        <ComboBox Grid.Row="0"
+                  x:CompileBindings="False"
+                  ItemsSource="{Binding AvailableRuns}"
+                  SelectedItem="{Binding SelectedRunOption}"
+                  IsVisible="{Binding HasRunSelector}"
+                  MinWidth="220"
+                  HorizontalAlignment="Left"
+                  Margin="0,0,0,8">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
 
         <!-- Open output folder -->
-        <Button Grid.Row="0"
+        <Button Grid.Row="1"
                 Content="Open output folder"
                 Command="{Binding OpenOutputFolderCommand}"
                 IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                 HorizontalAlignment="Left" Margin="0,0,0,8" />
 
         <!-- Results DataGrid -->
-        <Border Grid.Row="1"
+        <Border Grid.Row="2"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4"
                 IsVisible="{Binding HasResults}">
