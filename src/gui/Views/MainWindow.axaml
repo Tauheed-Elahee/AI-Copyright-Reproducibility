@@ -379,72 +379,65 @@
 
     <!-- ── Tab 4: Inputs ──────────────────────────────────────────────── -->
     <TabItem Header="Inputs" IsEnabled="{Binding HasProject}">
-      <ScrollViewer Margin="12">
-        <StackPanel x:CompileBindings="False" Spacing="12">
+      <TabControl Margin="12,8,12,12" x:CompileBindings="False">
 
-          <!-- Texts -->
-          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                  BorderThickness="1" CornerRadius="4" Padding="10,8"
-                  IsVisible="{Binding Inputs.HasTexts}">
-            <Grid RowDefinitions="Auto,*">
-              <TextBlock Grid.Row="0" Text="Texts" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
-              <DataGrid Grid.Row="1"
-                        ItemsSource="{Binding Inputs.Texts}"
-                        AutoGenerateColumns="False" IsReadOnly="True"
-                        GridLinesVisibility="Horizontal" MaxHeight="260">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="160" />
-                  <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" />
-                  <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}" Width="80" />
-                </DataGrid.Columns>
-              </DataGrid>
-            </Grid>
-          </Border>
+        <!-- ── Inner tab: Texts ────────────────────────────────────────── -->
+        <TabItem Header="Texts">
+          <Grid Margin="0,8,0,0">
+            <TextBlock Text="No texts loaded."
+                       IsVisible="{Binding !Inputs.HasTexts}"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <DataGrid ItemsSource="{Binding Inputs.Texts}"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      GridLinesVisibility="Horizontal"
+                      IsVisible="{Binding Inputs.HasTexts}">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Label"    Binding="{Binding Label}"        Width="160" />
+                <DataGridTextColumn Header="Title"    Binding="{Binding Title}"         Width="*" />
+                <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}"  Width="80" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </TabItem>
 
-          <!-- Queries -->
-          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                  BorderThickness="1" CornerRadius="4" Padding="10,8"
-                  IsVisible="{Binding Inputs.HasQueries}">
-            <Grid RowDefinitions="Auto,*">
-              <TextBlock Grid.Row="0" Text="Queries" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
-              <DataGrid Grid.Row="1"
-                        ItemsSource="{Binding Inputs.Queries}"
-                        AutoGenerateColumns="False" IsReadOnly="True"
-                        GridLinesVisibility="Horizontal" MaxHeight="260">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="160" />
-                  <DataGridTextColumn Header="Types" Binding="{Binding Types}" Width="160" />
-                  <DataGridTextColumn Header="User prompt" Binding="{Binding UserPromptPreview}" Width="*" />
-                </DataGrid.Columns>
-              </DataGrid>
-            </Grid>
-          </Border>
+        <!-- ── Inner tab: Queries ─────────────────────────────────────── -->
+        <TabItem Header="Queries">
+          <Grid Margin="0,8,0,0">
+            <TextBlock Text="No queries loaded."
+                       IsVisible="{Binding !Inputs.HasQueries}"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <DataGrid ItemsSource="{Binding Inputs.Queries}"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      GridLinesVisibility="Horizontal"
+                      IsVisible="{Binding Inputs.HasQueries}">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Label"       Binding="{Binding Label}"            Width="160" />
+                <DataGridTextColumn Header="Types"       Binding="{Binding Types}"             Width="160" />
+                <DataGridTextColumn Header="User prompt" Binding="{Binding UserPromptPreview}" Width="*" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </TabItem>
 
-          <!-- Prompts -->
-          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                  BorderThickness="1" CornerRadius="4" Padding="10,8"
-                  IsVisible="{Binding Inputs.HasPrompts}">
-            <Grid RowDefinitions="Auto,*">
-              <TextBlock Grid.Row="0" Text="Prompts" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
-              <DataGrid Grid.Row="1"
-                        ItemsSource="{Binding Inputs.Prompts}"
-                        AutoGenerateColumns="False" IsReadOnly="True"
-                        GridLinesVisibility="Horizontal" MaxHeight="260">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Text" Binding="{Binding TextLabel}" Width="160" />
-                  <DataGridTextColumn Header="Queries" Binding="{Binding Queries}" Width="*" />
-                </DataGrid.Columns>
-              </DataGrid>
-            </Grid>
-          </Border>
+        <!-- ── Inner tab: Prompts ─────────────────────────────────────── -->
+        <TabItem Header="Prompts">
+          <Grid Margin="0,8,0,0">
+            <TextBlock Text="No prompts loaded."
+                       IsVisible="{Binding !Inputs.HasPrompts}"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <DataGrid ItemsSource="{Binding Inputs.Prompts}"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      GridLinesVisibility="Horizontal"
+                      IsVisible="{Binding Inputs.HasPrompts}">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Text"    Binding="{Binding TextLabel}" Width="160" />
+                <DataGridTextColumn Header="Queries" Binding="{Binding Queries}"   Width="*" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </TabItem>
 
-          <TextBlock Text="No inputs loaded (check project.json fs.input.files)"
-                     IsVisible="{Binding !Inputs.HasTexts}"
-                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                     Margin="0,4" />
-
-        </StackPanel>
-      </ScrollViewer>
+      </TabControl>
     </TabItem>
 
     <!-- ── Tab 5: Run ─────────────────────────────────────────────────── -->
