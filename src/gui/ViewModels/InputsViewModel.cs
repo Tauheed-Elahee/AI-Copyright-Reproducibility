@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using ReactiveUI;
 using AICopyrightReproducibility.Config;
 
 namespace AICopyrightReproducibility.Gui.ViewModels
@@ -18,6 +19,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public bool HasQueries => Queries.Count > 0;
         public bool HasTexts   => Texts.Count > 0;
         public bool HasPrompts => Prompts.Count > 0;
+
+        public string TextsHeader   => $"Texts ({Texts.Count})";
+        public string QueriesHeader => $"Queries ({Queries.Count})";
+        public string PromptsHeader => $"Prompts ({Prompts.Count})";
 
         public void LoadFrom(
             List<QueryConfig> queries,
@@ -43,6 +48,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Prompts.Add(new PromptDisplayItem(
                     p.Text,
                     string.Join(", ", p.Queries)));
+
+            this.RaisePropertyChanged(nameof(TextsHeader));
+            this.RaisePropertyChanged(nameof(QueriesHeader));
+            this.RaisePropertyChanged(nameof(PromptsHeader));
         }
     }
 }

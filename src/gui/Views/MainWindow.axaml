@@ -32,7 +32,7 @@
       <Setter Property="BorderBrush"     Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Foreground"      Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-      <Setter Property="Opacity"         Value="0.55"/>
+      <Setter Property="Opacity"         Value="0.65"/>
     </Style>
     <Style Selector="ToggleButton.log-filter:pointerover">
       <Setter Property="Opacity" Value="0.8"/>
@@ -131,7 +131,7 @@
     <Grid>
 
       <!-- ── Open ─────────────────────────────────────────────────────── -->
-      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="12" IsVisible="{Binding IsOpenPage}">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="12" IsVisible="{Binding IsOpenPage}">
 
         <TextBlock Grid.Row="0" Text="Open Project" FontWeight="Bold" FontSize="18" Margin="0,0,0,8" />
 
@@ -143,44 +143,56 @@
           <Button Grid.Column="2" Content="Load Config" Command="{Binding LoadConfigCommand}" Margin="6,0,0,0" />
         </Grid>
 
-        <Border Grid.Row="2"
+        <TextBlock Grid.Row="2"
+                   Text="Browse to or type a project directory, then click Load Config."
+                   TextWrapping="Wrap" Margin="0,2,0,8"
+                   IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNull}}" />
+
+        <Border Grid.Row="3"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,8"
                 IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid RowDefinitions="Auto,Auto">
             <TextBlock Grid.Row="0" FontWeight="Bold" FontSize="14" Text="{Binding Summary.ProjectName}" />
             <WrapPanel Grid.Row="1" Margin="0,6,0,0">
-              <TextBlock Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
+              <TextBlock FontSize="13" Text="{Binding Summary.Author, StringFormat='Author: {0}'}"
                          Margin="0,0,20,0"
                          IsVisible="{Binding Summary.Author, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-              <TextBlock Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}" Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"    Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"                   Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"                   Margin="0,0,20,0" />
-              <TextBlock Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"        Margin="0,0,20,0" />
-              <TextBlock Text="READ-ONLY" Foreground="#FF7043" FontWeight="SemiBold"
+              <TextBlock FontSize="13" Text="{Binding Summary.DeploymentCount, StringFormat='Deployments: {0}'}" Margin="0,0,20,0" />
+              <TextBlock FontSize="13" Text="{Binding Summary.BoundPromptCount, StringFormat='Prompts: {0}'}"    Margin="0,0,20,0" />
+              <TextBlock FontSize="13" Text="{Binding Summary.Sets, StringFormat='Sets: {0}'}"                   Margin="0,0,20,0" />
+              <TextBlock FontSize="13" Text="{Binding Summary.Reps, StringFormat='Reps: {0}'}"                   Margin="0,0,20,0" />
+              <TextBlock FontSize="13" Text="{Binding Summary.TotalRuns, StringFormat='Total runs: {0}'}"        Margin="0,0,20,0" />
+              <TextBlock FontSize="13" Text="READ-ONLY" Foreground="#FF7043" FontWeight="SemiBold"
                          IsVisible="{Binding Summary.IsReadOnly}" />
             </WrapPanel>
           </Grid>
         </Border>
 
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="4"
                    Text="{Binding ErrorMessage}" Foreground="#EF5350" FontWeight="SemiBold" TextWrapping="Wrap"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,8" />
 
-        <Grid Grid.Row="4" RowDefinitions="Auto,*" IsVisible="{Binding HasRecentProjects}">
-          <TextBlock Grid.Row="0" Text="Recent" FontWeight="SemiBold" FontSize="12"
-                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+        <Grid Grid.Row="5" RowDefinitions="Auto,*" IsVisible="{Binding HasRecentProjects}">
+          <TextBlock Grid.Row="0" Text="Recent" FontWeight="SemiBold" FontSize="13"
                      Margin="0,0,0,4" />
           <ItemsControl Grid.Row="1" ItemsSource="{Binding RecentProjects}" x:CompileBindings="False">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Button Content="{Binding Name}" ToolTip.Tip="{Binding Path}"
-                        Command="{Binding $parent[ItemsControl].DataContext.OpenRecentCommand}"
+                <Button Command="{Binding $parent[ItemsControl].DataContext.OpenRecentCommand}"
                         CommandParameter="{Binding Path}"
                         HorizontalAlignment="Left" HorizontalContentAlignment="Left"
-                        Margin="0,0,0,4" />
+                        Margin="0,0,0,4">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock FontSize="12">
+                      <Run Text="{Binding LastOpened, StringFormat='{}{0:yyyy-MM-dd}'}" />
+                      <Run Text=" · " />
+                      <Run Text="{Binding Path}" />
+                    </TextBlock>
+                  </StackPanel>
+                </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -311,7 +323,6 @@
 
           <TextBlock Text="No deployments configured."
                      IsVisible="{Binding !Deployments.HasItems}"
-                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                      Margin="0,8" />
 
           <ItemsControl ItemsSource="{Binding Deployments.Items}">
@@ -325,15 +336,14 @@
                       <Border Grid.Column="1"
                               Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
                               CornerRadius="3" Padding="6,2">
-                        <TextBlock Text="{Binding Mode}" FontSize="12" />
+                        <TextBlock Text="{Binding Mode}" FontSize="13" />
                       </Border>
                     </Grid>
-                    <TextBlock Grid.Row="1" Text="{Binding Endpoint}" FontSize="12"
-                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                    <TextBlock Grid.Row="1" Text="{Binding Endpoint}" FontSize="13"
                                IsVisible="{Binding Endpoint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                Margin="0,0,0,4" />
                     <TextBlock Grid.Row="2" Text="{Binding ParameterSummary}"
-                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="13"
                                IsVisible="{Binding ParameterSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                TextWrapping="Wrap" />
                   </Grid>
@@ -366,13 +376,13 @@
                   <DataTemplate>
                     <Grid ColumnDefinitions="200,*,Auto" Margin="0,3,0,3">
                       <TextBlock Grid.Column="0" Text="{Binding Key}"
-                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
+                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="13"
                                  VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding DisplayValue}"
-                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
+                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="13"
                                  VerticalAlignment="Center" />
                       <ToggleButton Grid.Column="2" Content="Show" IsChecked="{Binding ShowValue}"
-                                    Padding="8,2" FontSize="11" />
+                                    Padding="8,2" FontSize="12" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -388,7 +398,7 @@
         <TextBlock Grid.Row="0" Text="Inputs" FontWeight="Bold" FontSize="18" Margin="0,0,0,4" />
       <TabControl Grid.Row="1" x:CompileBindings="False">
 
-        <TabItem Header="Texts">
+        <TabItem Header="{Binding Inputs.TextsHeader}">
           <Grid Margin="0,8,0,0">
             <TextBlock Text="No texts loaded."
                        IsVisible="{Binding !Inputs.HasTexts}"
@@ -406,7 +416,7 @@
           </Grid>
         </TabItem>
 
-        <TabItem Header="Queries">
+        <TabItem Header="{Binding Inputs.QueriesHeader}">
           <Grid Margin="0,8,0,0">
             <TextBlock Text="No queries loaded."
                        IsVisible="{Binding !Inputs.HasQueries}"
@@ -424,7 +434,7 @@
           </Grid>
         </TabItem>
 
-        <TabItem Header="Prompts">
+        <TabItem Header="{Binding Inputs.PromptsHeader}">
           <Grid Margin="0,8,0,0">
             <TextBlock Text="No prompts loaded."
                        IsVisible="{Binding !Inputs.HasPrompts}"
@@ -445,7 +455,7 @@
       </Grid>
 
       <!-- ── Run ───────────────────────────────────────────────────────── -->
-      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12" IsVisible="{Binding IsRunPage}">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="12" IsVisible="{Binding IsRunPage}">
 
         <Border Grid.Row="0"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
@@ -470,12 +480,8 @@
               <TextBlock Text="READ-ONLY — run not allowed"
                          Foreground="#FF7043" FontWeight="SemiBold"
                          IsVisible="{Binding Summary.IsReadOnly}" />
-              <StackPanel Orientation="Horizontal" Spacing="8"
-                          IsVisible="{Binding !Summary.IsReadOnly}">
-                <Button Content="Run Experiment"  Command="{Binding RunCommand}" />
-                <Button Content="Go to Output →"  Command="{Binding GoToOutputCommand}"
-                        IsVisible="{Binding RunCompleted}" />
-              </StackPanel>
+              <Button Content="Run Experiment" Command="{Binding RunCommand}"
+                      IsVisible="{Binding !Summary.IsReadOnly}" />
             </StackPanel>
           </Grid>
         </Border>
@@ -494,12 +500,25 @@
         </Grid>
 
         <TextBlock Grid.Row="2"
-                   Text="{Binding CurrentOperation}" FontSize="11"
+                   Text="{Binding CurrentOperation}" FontSize="12"
                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                    IsVisible="{Binding CurrentOperation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,4" />
 
-        <Border Grid.Row="3"
+        <Border Grid.Row="3" CornerRadius="4" Padding="10,6" Margin="0,0,0,6"
+                Background="#1566BB6A" IsVisible="{Binding IsRunCompleted}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="Run complete — results are ready."
+                       FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="View Output →" Command="{Binding GoToOutputCommand}" />
+          </Grid>
+        </Border>
+        <Border Grid.Row="3" CornerRadius="4" Padding="10,6" Margin="0,0,0,6"
+                Background="#15EF5350" IsVisible="{Binding IsRunFailed}">
+          <TextBlock Text="Run failed — see error below." FontWeight="SemiBold" Foreground="#EF5350" />
+        </Border>
+
+        <Border Grid.Row="4"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                 BorderThickness="1" CornerRadius="4" Margin="0,0,0,6">
           <Grid RowDefinitions="Auto,*">
@@ -508,22 +527,22 @@
               <TextBlock Grid.Column="0" Text="Log" FontWeight="SemiBold" Margin="8,4" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="0,2,4,2">
                 <Button Content="All"  Command="{Binding SelectAllLogsCommand}"
-                        Padding="6,2" FontSize="11" ToolTip.Tip="Show all levels" />
+                        Padding="6,2" FontSize="12" ToolTip.Tip="Show all levels" />
                 <Button Content="None" Command="{Binding SelectNoneLogsCommand}"
-                        Padding="6,2" FontSize="11" ToolTip.Tip="Hide all levels" />
+                        Padding="6,2" FontSize="12" ToolTip.Tip="Hide all levels" />
                 <Rectangle Width="1" Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                            Margin="4,2" VerticalAlignment="Stretch" />
                 <ToggleButton Classes="log-filter log-v" IsChecked="{Binding ShowVerbose}"
-                              Content="Verb" ToolTip.Tip="Verbose" Padding="6,2" FontSize="11"
+                              Content="Verb" ToolTip.Tip="Verbose" Padding="6,2" FontSize="12"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
                 <ToggleButton Classes="log-filter log-i" IsChecked="{Binding ShowInfo}"
-                              Content="Info" ToolTip.Tip="Info"    Padding="6,2" FontSize="11"
+                              Content="Info" ToolTip.Tip="Info"    Padding="6,2" FontSize="12"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
                 <ToggleButton Classes="log-filter log-w" IsChecked="{Binding ShowWarning}"
-                              Content="Warn" ToolTip.Tip="Warning" Padding="6,2" FontSize="11"
+                              Content="Warn" ToolTip.Tip="Warning" Padding="6,2" FontSize="12"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
                 <ToggleButton Classes="log-filter log-e" IsChecked="{Binding ShowError}"
-                              Content="Error" ToolTip.Tip="Error"  Padding="6,2" FontSize="11"
+                              Content="Error" ToolTip.Tip="Error"  Padding="6,2" FontSize="12"
                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
               </StackPanel>
             </Grid>
@@ -534,7 +553,7 @@
                   <DataTemplate x:DataType="vm:LogLine">
                     <TextBlock Text="{Binding Text}"
                                Foreground="{Binding Level, Converter={x:Static conv:LogLevelBrushConverter.Instance}}"
-                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="11"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12"
                                TextWrapping="NoWrap" />
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -543,7 +562,7 @@
           </Grid>
         </Border>
 
-        <TextBlock Grid.Row="4"
+        <TextBlock Grid.Row="5"
                    Text="{Binding ErrorMessage}" Foreground="#EF5350" FontWeight="SemiBold" TextWrapping="Wrap"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Margin="0,0,0,6" />
@@ -589,6 +608,7 @@
                       <DataGridTextColumn Header="Success"    Binding="{Binding SuccessCount}" Width="80" />
                       <DataGridTextColumn Header="Errors"     Binding="{Binding ErrorCount}"   Width="80" />
                       <DataGridTextColumn Header="Total"      Binding="{Binding TotalRuns}"    Width="70" />
+                      <DataGridTextColumn Header="Success %"  Binding="{Binding SuccessRatePct, StringFormat=F0}" Width="90" />
                       <DataGridTextColumn Header="Avg ms"     Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
                     </DataGrid.Columns>
                   </DataGrid>
@@ -640,51 +660,51 @@
           <TextBlock Text="https://polyformproject.org/licenses/strict/1.0.0"
                      Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
 
-          <TextBlock Text="Acceptance" FontWeight="SemiBold" />
+          <TextBlock Text="Acceptance" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses." />
 
-          <TextBlock Text="Copyright License" FontWeight="SemiBold" />
+          <TextBlock Text="Copyright License" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose, other than distributing the software or making changes or new works based on the software." />
 
-          <TextBlock Text="Patent License" FontWeight="SemiBold" />
+          <TextBlock Text="Patent License" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software." />
 
-          <TextBlock Text="Noncommercial Purposes" FontWeight="SemiBold" />
+          <TextBlock Text="Noncommercial Purposes" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="Any noncommercial purpose is a permitted purpose." />
 
-          <TextBlock Text="Personal Uses" FontWeight="SemiBold" />
+          <TextBlock Text="Personal Uses" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose." />
 
-          <TextBlock Text="Noncommercial Organizations" FontWeight="SemiBold" />
+          <TextBlock Text="Noncommercial Organizations" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding." />
 
-          <TextBlock Text="Fair Use" FontWeight="SemiBold" />
+          <TextBlock Text="Fair Use" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text='You may have "fair use" rights for the software under the law. These terms do not limit them.' />
 
-          <TextBlock Text="No Other Rights" FontWeight="SemiBold" />
+          <TextBlock Text="No Other Rights" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else. These terms do not imply any other licenses." />
 
-          <TextBlock Text="Patent Defense" FontWeight="SemiBold" />
+          <TextBlock Text="Patent Defense" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company." />
 
-          <TextBlock Text="Violations" FontWeight="SemiBold" />
+          <TextBlock Text="Violations" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice. Otherwise, all your licenses end immediately." />
 
-          <TextBlock Text="No Liability" FontWeight="SemiBold" />
+          <TextBlock Text="No Liability" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim." />
 
-          <TextBlock Text="Definitions" FontWeight="SemiBold" />
+          <TextBlock Text="Definitions" FontWeight="SemiBold" FontSize="15" />
           <TextBlock TextWrapping="Wrap"
                      Text="The licensor is the individual or entity offering these terms, and the software is the software the licensor makes available under these terms. You refers to the individual or entity agreeing to these terms. Your company is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization. Control means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise. Control can be direct or indirect. Your licenses are all the licenses granted to you for the software under these terms. Use means anything you do with the software requiring one of your licenses." />
 
@@ -697,8 +717,9 @@
       <!-- ── About ─────────────────────────────────────────────────────── -->
       <StackPanel Margin="12" Spacing="8" IsVisible="{Binding IsAboutPage}">
         <TextBlock Text="AI Copyright Reproducibility" FontWeight="Bold" FontSize="18" />
+        <TextBlock Text="{Binding AppVersion, StringFormat='Version {0}'}" FontSize="13"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         <TextBlock TextWrapping="Wrap"
-                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                    Text="A tool for running and analysing AI copyright reproducibility experiments." />
       </StackPanel>
 

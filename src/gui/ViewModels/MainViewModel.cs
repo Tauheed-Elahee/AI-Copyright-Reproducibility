@@ -84,6 +84,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 this.RaisePropertyChanged(nameof(IsRunning));
                 this.RaisePropertyChanged(nameof(IsOutputAvailable));
                 this.RaisePropertyChanged(nameof(RunCompleted));
+                this.RaisePropertyChanged(nameof(IsRunCompleted));
+                this.RaisePropertyChanged(nameof(IsRunFailed));
                 this.RaisePropertyChanged(nameof(WindowTitle));
             }
         }
@@ -214,7 +216,11 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public bool IsOutputAvailable => _state != RunState.Idle || AvailableRuns.Count > 1;
         public bool HasRunSelector    => AvailableRuns.Count > 1;
         public bool RunCompleted      => _state == RunState.Completed || _state == RunState.Failed;
+        public bool IsRunCompleted    => _state == RunState.Completed;
+        public bool IsRunFailed       => _state == RunState.Failed;
         public bool HasRecentProjects => RecentProjects.Count > 0;
+
+        public string AppVersion { get; } = GetGuiVersion().ToString();
 
         public string WindowTitle => _state switch
         {

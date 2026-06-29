@@ -10,6 +10,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public int                ErrorCount    { get; init; }
         public double             AvgDurationMs { get; init; }
         public IReadOnlyList<long> Durations    { get; init; } = Array.Empty<long>();
-        public int                TotalRuns     => SuccessCount + ErrorCount;
+        public int                TotalRuns      => SuccessCount + ErrorCount;
+        public double             SuccessRatePct => TotalRuns > 0 ? 100.0 * SuccessCount / TotalRuns : 0;
     }
 }
