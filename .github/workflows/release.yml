@@ -29,18 +29,23 @@ jobs:
           - rid: linux-x64
             os: ubuntu-latest
             binary: aicr
+            gui_binary: aicr-gui
           - rid: linux-arm64
             os: ubuntu-latest
             binary: aicr
+            gui_binary: aicr-gui
           - rid: osx-x64
             os: macos-latest
             binary: aicr
+            gui_binary: aicr-gui
           - rid: osx-arm64
             os: macos-latest
             binary: aicr
+            gui_binary: aicr-gui
           - rid: win-x64
             os: windows-latest
             binary: aicr.exe
+            gui_binary: aicr-gui.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -49,20 +54,35 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Publish
+      - name: Publish CLI
         run: >
           dotnet publish src/cli/
           -c Release
           -r ${{ matrix.rid }}
           --self-contained
           -p:PublishSingleFile=true
-          -o dist/${{ matrix.rid }}
+          -o dist/${{ matrix.rid }}/cli
 
-      - name: Upload binary
+      - name: Publish GUI
+        run: >
+          dotnet publish src/gui/
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained
+          -p:PublishSingleFile=true
+          -o dist/${{ matrix.rid }}/gui
+
+      - name: Upload CLI binary
         uses: actions/upload-artifact@v4
         with:
           name: aicr-${{ matrix.rid }}
-          path: dist/${{ matrix.rid }}/${{ matrix.binary }}
+          path: dist/${{ matrix.rid }}/cli/${{ matrix.binary }}
+
+      - name: Upload GUI binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: aicr-gui-${{ matrix.rid }}
+          path: dist/${{ matrix.rid }}/gui/${{ matrix.gui_binary }}
 
   release:
     name: Create release
@@ -86,8 +106,10 @@ jobs:
         run: |
           for rid in linux-x64 linux-arm64 osx-x64 osx-arm64; do
             mv artifacts/aicr-$rid/aicr artifacts/aicr-$rid/aicr-$rid
+            mv artifacts/aicr-gui-$rid/aicr-gui artifacts/aicr-gui-$rid/aicr-gui-$rid
           done
           mv artifacts/aicr-win-x64/aicr.exe artifacts/aicr-win-x64/aicr-win-x64.exe
+          mv artifacts/aicr-gui-win-x64/aicr-gui.exe artifacts/aicr-gui-win-x64/aicr-gui-win-x64.exe
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -98,5 +120,10 @@ jobs:
             artifacts/aicr-osx-x64/aicr-osx-x64
             artifacts/aicr-osx-arm64/aicr-osx-arm64
             artifacts/aicr-win-x64/aicr-win-x64.exe
+            artifacts/aicr-gui-linux-x64/aicr-gui-linux-x64
+            artifacts/aicr-gui-linux-arm64/aicr-gui-linux-arm64
+            artifacts/aicr-gui-osx-x64/aicr-gui-osx-x64
+            artifacts/aicr-gui-osx-arm64/aicr-gui-osx-arm64
+            artifacts/aicr-gui-win-x64/aicr-gui-win-x64.exe
             artifacts/example.project.tar.gz
           generate_release_notes: true
