@@ -70,7 +70,7 @@
     </Style>
   </Window.Styles>
 
-  <TabControl SelectedIndex="{Binding SelectedTabIndex}">
+  <TabControl SelectedIndex="{Binding SelectedTabIndex}" TabStripPlacement="Left">
 
     <!-- ── Tab 0: Open ────────────────────────────────────────────────── -->
     <TabItem Header="Open">
@@ -581,83 +581,94 @@
 
     <!-- ── Tab 6: Output ──────────────────────────────────────────────── -->
     <TabItem Header="Output" IsEnabled="{Binding IsOutputAvailable}">
-      <ScrollViewer Margin="12">
-        <StackPanel x:CompileBindings="False" Spacing="12">
+      <Grid RowDefinitions="Auto,*" Margin="12,8,12,12">
 
-          <!-- Run selector — only visible when there are historical runs to choose from -->
+        <!-- Page-level controls: run selector + open folder -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8"
+                    x:CompileBindings="False">
           <ComboBox ItemsSource="{Binding AvailableRuns}"
                     SelectedItem="{Binding SelectedRunOption}"
                     IsVisible="{Binding HasRunSelector}"
-                    MinWidth="220"
-                    HorizontalAlignment="Left">
+                    MinWidth="220">
             <ComboBox.ItemTemplate>
               <DataTemplate>
                 <TextBlock Text="{Binding Label}" />
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-
-          <!-- Open output folder -->
           <Button Content="Open output folder"
                   Command="{Binding OpenOutputFolderCommand}"
-                  IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                  HorizontalAlignment="Left" />
-
-          <!-- Results DataGrid -->
-          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                  BorderThickness="1" CornerRadius="4"
-                  IsVisible="{Binding HasResults}">
-            <Grid RowDefinitions="Auto,*">
-              <TextBlock Grid.Row="0" Text="Results" FontWeight="SemiBold" Margin="6,4" />
-              <DataGrid Grid.Row="1"
-                        ItemsSource="{Binding Results}"
-                        AutoGenerateColumns="False"
-                        IsReadOnly="True"
-                        MaxHeight="280"
-                        GridLinesVisibility="Horizontal">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Deployment"
-                                      Binding="{Binding Deployment}" Width="*" />
-                  <DataGridTextColumn Header="Success"
-                                      Binding="{Binding SuccessCount}" Width="80" />
-                  <DataGridTextColumn Header="Errors"
-                                      Binding="{Binding ErrorCount}" Width="80" />
-                  <DataGridTextColumn Header="Total"
-                                      Binding="{Binding TotalRuns}" Width="70" />
-                  <DataGridTextColumn Header="Avg ms"
-                                      Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
-                </DataGrid.Columns>
-              </DataGrid>
-            </Grid>
-          </Border>
-
-          <!-- Charts: Success Rate + Duration Distribution -->
-          <Grid ColumnDefinitions="*,*" IsVisible="{Binding Charts.HasData}">
-
-            <Border Grid.Column="0"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="0,0,6,0">
-              <Grid RowDefinitions="Auto,*">
-                <TextBlock Grid.Row="0" Text="Success Rate"
-                           FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
-                <sp:AvaPlot Grid.Row="1" x:Name="SuccessChart" Height="260" />
-              </Grid>
-            </Border>
-
-            <Border Grid.Column="1"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="6,0,0,0">
-              <Grid RowDefinitions="Auto,*">
-                <TextBlock Grid.Row="0" Text="Duration Distribution"
-                           FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
-                <sp:AvaPlot Grid.Row="1" x:Name="DurationChart" Height="260" />
-              </Grid>
-            </Border>
-
-          </Grid>
-
+                  IsVisible="{Binding OutputDir, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
-      </ScrollViewer>
+
+        <!-- Inner tabs: Table | Charts -->
+        <TabControl Grid.Row="1" x:CompileBindings="False">
+
+          <!-- ── Inner tab: Table ──────────────────────────────────────── -->
+          <TabItem Header="Table">
+            <ScrollViewer Padding="0,8,0,0">
+              <StackPanel Spacing="8">
+
+                <TextBlock Text="No results yet."
+                           IsVisible="{Binding !HasResults}"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+
+                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                        BorderThickness="1" CornerRadius="4"
+                        IsVisible="{Binding HasResults}">
+                  <DataGrid ItemsSource="{Binding Results}"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True"
+                            GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                      <DataGridTextColumn Header="Deployment"
+                                          Binding="{Binding Deployment}" Width="*" />
+                      <DataGridTextColumn Header="Success"
+                                          Binding="{Binding SuccessCount}" Width="80" />
+                      <DataGridTextColumn Header="Errors"
+                                          Binding="{Binding ErrorCount}" Width="80" />
+                      <DataGridTextColumn Header="Total"
+                                          Binding="{Binding TotalRuns}" Width="70" />
+                      <DataGridTextColumn Header="Avg ms"
+                                          Binding="{Binding AvgDurationMs, StringFormat=F0}" Width="90" />
+                    </DataGrid.Columns>
+                  </DataGrid>
+                </Border>
+
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- ── Inner tab: Charts ─────────────────────────────────────── -->
+          <TabItem Header="Charts" IsEnabled="{Binding Charts.HasData}">
+            <ScrollViewer Padding="0,8,0,0">
+              <StackPanel Spacing="12" Margin="0,0,0,8">
+
+                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="8,6">
+                  <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Text="Success Rate"
+                               FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+                    <sp:AvaPlot Grid.Row="1" x:Name="SuccessChart" Height="300" />
+                  </Grid>
+                </Border>
+
+                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="8,6">
+                  <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Text="Duration Distribution"
+                               FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4" />
+                    <sp:AvaPlot Grid.Row="1" x:Name="DurationChart" Height="300" />
+                  </Grid>
+                </Border>
+
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+        </TabControl>
+
+      </Grid>
     </TabItem>
 
   </TabControl>
