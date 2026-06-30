@@ -13,20 +13,28 @@ using AICopyrightReproducibility.Utils;
 
 namespace AICopyrightReproducibility.Gui.ViewModels
 {
-    public sealed record TextDisplayItem(string Label, string Title, int SectionCount);
     public sealed record PromptDisplayItem(string TextLabel, string Queries);
 
     public sealed class InputsViewModel : ViewModelBase
     {
+        // ── Queries state ─────────────────────────────────────────────────────
         private QueryRowViewModel? _selectedQuery;
         private string?            _queriesFilePath;
         private string?            _queriesSaveError;
         private bool               _queriesSaveSuccess;
 
-        public ObservableCollection<QueryRowViewModel>  Queries { get; } = new();
-        public ObservableCollection<TextDisplayItem>    Texts   { get; } = new();
-        public ObservableCollection<PromptDisplayItem>  Prompts { get; } = new();
+        // ── Texts state ───────────────────────────────────────────────────────
+        private TextRowViewModel? _selectedText;
+        private string?           _textsFilePath;
+        private string?           _textsSaveError;
+        private bool              _textsSaveSuccess;
 
+        // ── Collections ───────────────────────────────────────────────────────
+        public ObservableCollection<QueryRowViewModel> Queries { get; } = new();
+        public ObservableCollection<TextRowViewModel>  Texts   { get; } = new();
+        public ObservableCollection<PromptDisplayItem> Prompts { get; } = new();
+
+        // ── Query properties ──────────────────────────────────────────────────
         public QueryRowViewModel? SelectedQuery
         {
             get => _selectedQuery;
@@ -57,6 +65,38 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _queriesSaveSuccess, value);
         }
 
+        // ── Text properties ───────────────────────────────────────────────────
+        public TextRowViewModel? SelectedText
+        {
+            get => _selectedText;
+            set => this.RaiseAndSetIfChanged(ref _selectedText, value);
+        }
+
+        public string? TextsFilePath
+        {
+            get => _textsFilePath;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _textsFilePath, value);
+                this.RaisePropertyChanged(nameof(CanEditTexts));
+            }
+        }
+
+        public bool CanEditTexts => _textsFilePath != null;
+
+        public string? TextsSaveError
+        {
+            get => _textsSaveError;
+            private set => this.RaiseAndSetIfChanged(ref _textsSaveError, value);
+        }
+
+        public bool TextsSaveSuccess
+        {
+            get => _textsSaveSuccess;
+            private set => this.RaiseAndSetIfChanged(ref _textsSaveSuccess, value);
+        }
+
+        // ── Derived counts ────────────────────────────────────────────────────
         public bool HasQueries => Queries.Count > 0;
         public bool HasTexts   => Texts.Count > 0;
         public bool HasPrompts => Prompts.Count > 0;
@@ -65,9 +105,14 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public string QueriesHeader => $"Queries ({Queries.Count})";
         public string PromptsHeader => $"Prompts ({Prompts.Count})";
 
+        // ── Commands ──────────────────────────────────────────────────────────
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveQueriesCommand { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddQueryCommand    { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DeleteQueryCommand { get; }
+
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveTextsCommand { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddTextCommand   { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DeleteTextCommand { get; }
 
         public InputsViewModel()
         {
@@ -89,14 +134,18 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
             SaveQueriesCommand = ReactiveCommand.Create(ExecuteSaveQueries);
             AddQueryCommand    = ReactiveCommand.Create(ExecuteAddQuery);
+            DeleteQueryCommand = ReactiveCommand.Create(ExecuteDeleteQuery,
+                this.WhenAnyValue(x => x.SelectedQuery).Select(q => q != null));
 
-            var canDelete = this.WhenAnyValue(x => x.SelectedQuery).Select(q => q != null);
-            DeleteQueryCommand = ReactiveCommand.Create(ExecuteDeleteQuery, canDelete);
+            SaveTextsCommand = ReactiveCommand.Create(ExecuteSaveTexts);
+            AddTextCommand   = ReactiveCommand.Create(ExecuteAddText);
+            DeleteTextCommand = ReactiveCommand.Create(ExecuteDeleteText,
+                this.WhenAnyValue(x => x.SelectedText).Select(t => t != null));
         }
 
         public void LoadFrom(
             List<QueryConfig> queries, string? queriesFilePath,
-            List<TextDbEntry> texts,
+            List<TextDbEntry> texts,   string? textsFilePath,
             List<PromptEntry> prompts)
         {
             Queries.Clear();
@@ -106,10 +155,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
             Texts.Clear();
             foreach (var t in texts)
-                Texts.Add(new TextDisplayItem(
-                    t.Label,
-                    t.Content.Title.Full,
-                    t.Content.SectionHeadings.Length));
+                Texts.Add(TextRowViewModel.From(t));
+            SelectedText = Texts.FirstOrDefault();
 
             Prompts.Clear();
             foreach (var p in prompts)
@@ -120,15 +167,20 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             QueriesFilePath    = queriesFilePath;
             QueriesSaveError   = null;
             QueriesSaveSuccess = false;
+
+            TextsFilePath    = textsFilePath;
+            TextsSaveError   = null;
+            TextsSaveSuccess = false;
         }
+
+        // ── Query commands ────────────────────────────────────────────────────
 
         private void ExecuteSaveQueries()
         {
             if (_queriesFilePath == null) return;
             try
             {
-                var list    = Queries.Select(q => q.ToConfig()).ToList();
-                var wrapper = new { queries = list };
+                var wrapper = new { queries = Queries.Select(q => q.ToConfig()).ToList() };
                 var opts    = new JsonSerializerOptions(ProjectLoader.ReadOpts) { WriteIndented = true };
                 File.WriteAllText(_queriesFilePath, JsonSerializer.Serialize(wrapper, opts));
                 QueriesSaveError   = null;
@@ -154,9 +206,43 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             if (SelectedQuery == null) return;
             int idx = Queries.IndexOf(SelectedQuery);
             Queries.Remove(SelectedQuery);
-            SelectedQuery = Queries.Count > 0
-                ? Queries[Math.Max(0, idx - 1)]
-                : null;
+            SelectedQuery = Queries.Count > 0 ? Queries[Math.Max(0, idx - 1)] : null;
+        }
+
+        // ── Text commands ─────────────────────────────────────────────────────
+
+        private void ExecuteSaveTexts()
+        {
+            if (_textsFilePath == null) return;
+            try
+            {
+                var wrapper = new { texts = Texts.Select(t => t.ToConfig()).ToList() };
+                var opts    = new JsonSerializerOptions(ProjectLoader.ReadOpts) { WriteIndented = true };
+                File.WriteAllText(_textsFilePath, JsonSerializer.Serialize(wrapper, opts));
+                TextsSaveError   = null;
+                TextsSaveSuccess = true;
+                _ = Task.Delay(2500).ContinueWith(_ =>
+                    Dispatcher.UIThread.Post(() => TextsSaveSuccess = false));
+            }
+            catch (Exception ex)
+            {
+                TextsSaveError = $"Save failed: {ex.Message}";
+            }
+        }
+
+        private void ExecuteAddText()
+        {
+            var t = new TextRowViewModel { Label = "new_text" };
+            Texts.Add(t);
+            SelectedText = t;
+        }
+
+        private void ExecuteDeleteText()
+        {
+            if (SelectedText == null) return;
+            int idx = Texts.IndexOf(SelectedText);
+            Texts.Remove(SelectedText);
+            SelectedText = Texts.Count > 0 ? Texts[Math.Max(0, idx - 1)] : null;
         }
     }
 }

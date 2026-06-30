@@ -402,7 +402,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     }
 
                     // ── Texts ─────────────────────────────────────────────────
-                    List<TextDbEntry> texts = new();
+                    List<TextDbEntry> texts    = new();
+                    string?           textsFile = null;
                     if (cfg.Project.Fs.Input.Files?.Texts is { } tf)
                     {
                         string p = System.IO.Path.IsPathRooted(tf) ? tf : System.IO.Path.Combine(inputLocDir, tf);
@@ -414,6 +415,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                                 .Select(e => JsonSerializer.Deserialize<TextDbEntry>(
                                     e.GetRawText(), ProjectLoader.ReadOpts)!)
                                 .ToList();
+                            textsFile = p;
                         }
                     }
 
@@ -446,6 +448,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         Queries      = queries,
                         QueriesFile  = queriesFile,
                         Texts        = texts,
+                        TextsFile    = textsFile,
                         Prompts      = prompts
                     };
                 });
@@ -461,7 +464,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Secrets = secretsVm;
 
                 var inputsVm = new InputsViewModel();
-                inputsVm.LoadFrom(result.Queries, result.QueriesFile, result.Texts, result.Prompts);
+                inputsVm.LoadFrom(result.Queries, result.QueriesFile, result.Texts, result.TextsFile, result.Prompts);
                 Inputs = inputsVm;
 
                 _currentRunResults   = new List<DeploymentResultRow>();

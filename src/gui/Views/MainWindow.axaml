@@ -431,20 +431,144 @@
       <TabControl Grid.Row="1" x:CompileBindings="False">
 
         <TabItem Header="{Binding Inputs.TextsHeader}">
-          <Grid Margin="0,8,0,0">
-            <TextBlock Text="No texts loaded."
-                       IsVisible="{Binding !Inputs.HasTexts}"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <DataGrid ItemsSource="{Binding Inputs.Texts}"
-                      AutoGenerateColumns="False" IsReadOnly="True"
-                      GridLinesVisibility="Horizontal"
-                      IsVisible="{Binding Inputs.HasTexts}">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Label"    Binding="{Binding Label}"       Width="160" />
-                <DataGridTextColumn Header="Title"    Binding="{Binding Title}"        Width="*" />
-                <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}" Width="80" />
-              </DataGrid.Columns>
-            </DataGrid>
+          <Grid Margin="0,8,0,0" RowDefinitions="*,Auto">
+
+            <!-- Read-only path: texts embedded in project.json or no file -->
+            <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*"
+                  IsVisible="{Binding !Inputs.CanEditTexts}">
+              <TextBlock Grid.Row="0"
+                         Text="No texts loaded."
+                         IsVisible="{Binding !Inputs.HasTexts}"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <TextBlock Grid.Row="1"
+                         Text="Texts are embedded in project.json and cannot be edited here."
+                         Foreground="#FF7043" TextWrapping="Wrap"
+                         IsVisible="{Binding Inputs.HasTexts}"
+                         Margin="0,0,0,8" />
+              <DataGrid Grid.Row="2"
+                        ItemsSource="{Binding Inputs.Texts}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        GridLinesVisibility="Horizontal"
+                        IsVisible="{Binding Inputs.HasTexts}">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Label"    Binding="{Binding Label}"        Width="160" />
+                  <DataGridTextColumn Header="Title"    Binding="{Binding TitleFull}"     Width="*" />
+                  <DataGridTextColumn Header="Sections" Binding="{Binding SectionCount}"  Width="80" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+
+            <!-- Editable path: texts in a separate file -->
+            <Grid Grid.Row="0" ColumnDefinitions="180,4,*"
+                  IsVisible="{Binding Inputs.CanEditTexts}">
+
+              <!-- Left: list + add / delete -->
+              <Grid Grid.Column="0" RowDefinitions="*,Auto">
+                <ListBox Grid.Row="0"
+                         ItemsSource="{Binding Inputs.Texts}"
+                         SelectedItem="{Binding Inputs.SelectedText}">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                  <Button Content="Add"    Command="{Binding Inputs.AddTextCommand}"    Padding="8,3" FontSize="12" />
+                  <Button Content="Delete" Command="{Binding Inputs.DeleteTextCommand}" Padding="8,3" FontSize="12" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Splitter -->
+              <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" />
+
+              <!-- Right: edit form -->
+              <ScrollViewer Grid.Column="2" Padding="12,0,0,0"
+                            IsVisible="{Binding Inputs.SelectedText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="8" DataContext="{Binding Inputs.SelectedText}">
+
+                  <TextBlock Text="Label" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding Label}" />
+
+                  <TextBlock Text="Title (full)" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding TitleFull}" />
+
+                  <TextBlock Text="Title (short)" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding TitleShort}" />
+
+                  <!-- Section Headings header with mode toggle -->
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Section Headings"
+                               FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="{Binding SectionModeButtonText}"
+                            Command="{Binding ToggleSectionModeCommand}"
+                            Padding="8,2" FontSize="11" />
+                  </Grid>
+
+                  <!-- List mode (default) -->
+                  <StackPanel IsVisible="{Binding !IsSectionMassEditMode}" Spacing="4">
+                    <ItemsControl ItemsSource="{Binding SectionRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,2">
+                            <TextBox Grid.Column="0" Text="{Binding Text}" PlaceholderText="heading" />
+                            <Button Grid.Column="1" Content="×" Margin="4,0,0,0"
+                                    Command="{Binding $parent[ItemsControl].DataContext.DeleteSectionCommand}"
+                                    CommandParameter="{Binding}"
+                                    Padding="6,2" FontSize="12" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="+ Add heading" Command="{Binding AddSectionCommand}"
+                            Padding="8,3" FontSize="12" HorizontalAlignment="Left" />
+                  </StackPanel>
+
+                  <!-- Mass edit mode -->
+                  <StackPanel IsVisible="{Binding IsSectionMassEditMode}" Spacing="4">
+                    <TextBlock Text="one heading per line" FontSize="11"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    <TextBox Text="{Binding SectionHeadings}"
+                             AcceptsReturn="True" MinHeight="80" TextWrapping="Wrap" />
+                  </StackPanel>
+
+                  <TextBlock Text="Aliases" FontWeight="SemiBold" FontSize="12" />
+                  <ItemsControl ItemsSource="{Binding AliasRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto,*,Auto" Margin="0,2,0,2">
+                          <TextBox Grid.Column="0" Text="{Binding Key}"   PlaceholderText="key" />
+                          <TextBlock Grid.Column="1" Text=" → "
+                                     VerticalAlignment="Center" Margin="4,0" />
+                          <TextBox Grid.Column="2" Text="{Binding Value}" PlaceholderText="value" />
+                          <Button Grid.Column="3" Content="×" Margin="4,0,0,0"
+                                  Command="{Binding $parent[ItemsControl].DataContext.DeleteAliasCommand}"
+                                  CommandParameter="{Binding}"
+                                  Padding="6,2" FontSize="12" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Content="+ Add alias" Command="{Binding AddAliasCommand}"
+                          Padding="8,3" FontSize="12" HorizontalAlignment="Left" />
+
+                </StackPanel>
+              </ScrollViewer>
+
+            </Grid>
+
+            <!-- Save bar (editable path only) -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12"
+                        Margin="0,8,0,0" IsVisible="{Binding Inputs.CanEditTexts}">
+              <Button Content="Save texts" Command="{Binding Inputs.SaveTextsCommand}" />
+              <TextBlock Text="Saved ✓" Foreground="#66BB6A" FontWeight="SemiBold"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Inputs.TextsSaveSuccess}" />
+              <TextBlock Text="{Binding Inputs.TextsSaveError}" Foreground="#EF5350"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Inputs.TextsSaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
           </Grid>
         </TabItem>
 
