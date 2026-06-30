@@ -384,7 +384,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         : new();
 
                     // ── Queries ───────────────────────────────────────────────
-                    List<QueryConfig> queries = cfg.Queries;
+                    List<QueryConfig> queries     = cfg.Queries;
+                    string?           queriesFile = null;
                     if (cfg.Project.Fs.Input.Files?.Queries is { } qf)
                     {
                         string p = System.IO.Path.IsPathRooted(qf) ? qf : System.IO.Path.Combine(inputLocDir, qf);
@@ -396,6 +397,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                                 .Select(e => JsonSerializer.Deserialize<QueryConfig>(
                                     e.GetRawText(), ProjectLoader.ReadOpts)!)
                                 .ToList();
+                            queriesFile = p;
                         }
                     }
 
@@ -437,13 +439,14 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
                     return new
                     {
-                        Settings    = settingsVm,
+                        Settings     = settingsVm,
                         PreviousRuns = runs,
-                        Deployments = deployments,
-                        Secrets     = secretsCfg,
-                        Queries     = queries,
-                        Texts       = texts,
-                        Prompts     = prompts
+                        Deployments  = deployments,
+                        Secrets      = secretsCfg,
+                        Queries      = queries,
+                        QueriesFile  = queriesFile,
+                        Texts        = texts,
+                        Prompts      = prompts
                     };
                 });
 
@@ -458,7 +461,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Secrets = secretsVm;
 
                 var inputsVm = new InputsViewModel();
-                inputsVm.LoadFrom(result.Queries, result.Texts, result.Prompts);
+                inputsVm.LoadFrom(result.Queries, result.QueriesFile, result.Texts, result.Prompts);
                 Inputs = inputsVm;
 
                 _currentRunResults   = new List<DeploymentResultRow>();

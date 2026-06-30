@@ -449,20 +449,90 @@
         </TabItem>
 
         <TabItem Header="{Binding Inputs.QueriesHeader}">
-          <Grid Margin="0,8,0,0">
-            <TextBlock Text="No queries loaded."
-                       IsVisible="{Binding !Inputs.HasQueries}"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <DataGrid ItemsSource="{Binding Inputs.Queries}"
-                      AutoGenerateColumns="False" IsReadOnly="True"
-                      GridLinesVisibility="Horizontal"
-                      IsVisible="{Binding Inputs.HasQueries}">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Label"       Binding="{Binding Label}"            Width="160" />
-                <DataGridTextColumn Header="Types"       Binding="{Binding Types}"             Width="160" />
-                <DataGridTextColumn Header="User prompt" Binding="{Binding UserPromptPreview}" Width="*" />
-              </DataGrid.Columns>
-            </DataGrid>
+          <Grid Margin="0,8,0,0" RowDefinitions="*,Auto">
+
+            <!-- Read-only path: queries embedded in project.json or no file -->
+            <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*"
+                  IsVisible="{Binding !Inputs.CanEditQueries}">
+              <TextBlock Grid.Row="0"
+                         Text="No queries loaded."
+                         IsVisible="{Binding !Inputs.HasQueries}"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <TextBlock Grid.Row="1"
+                         Text="Queries are embedded in project.json and cannot be edited here."
+                         Foreground="#FF7043" TextWrapping="Wrap"
+                         IsVisible="{Binding Inputs.HasQueries}"
+                         Margin="0,0,0,8" />
+              <DataGrid Grid.Row="2"
+                        ItemsSource="{Binding Inputs.Queries}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        GridLinesVisibility="Horizontal"
+                        IsVisible="{Binding Inputs.HasQueries}">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Label"       Binding="{Binding Label}"            Width="160" />
+                  <DataGridTextColumn Header="Types"       Binding="{Binding Types}"             Width="160" />
+                  <DataGridTextColumn Header="User prompt" Binding="{Binding UserPromptPreview}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+
+            <!-- Editable path: queries in a separate file -->
+            <Grid Grid.Row="0" ColumnDefinitions="180,4,*"
+                  IsVisible="{Binding Inputs.CanEditQueries}">
+
+              <!-- Left: list + add / delete -->
+              <Grid Grid.Column="0" RowDefinitions="*,Auto">
+                <ListBox Grid.Row="0"
+                         ItemsSource="{Binding Inputs.Queries}"
+                         SelectedItem="{Binding Inputs.SelectedQuery}">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                  <Button Content="Add"    Command="{Binding Inputs.AddQueryCommand}"    Padding="8,3" FontSize="12" />
+                  <Button Content="Delete" Command="{Binding Inputs.DeleteQueryCommand}" Padding="8,3" FontSize="12" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Splitter -->
+              <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" />
+
+              <!-- Right: edit form -->
+              <ScrollViewer Grid.Column="2" Padding="12,0,0,0"
+                            IsVisible="{Binding Inputs.SelectedQuery, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="8" DataContext="{Binding Inputs.SelectedQuery}">
+                  <TextBlock Text="Label" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding Label}" />
+                  <TextBlock Text="Types" FontWeight="SemiBold" FontSize="12" />
+                  <TextBlock Text="comma-separated, e.g. list_task, order_task" FontSize="11"
+                             Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                  <TextBox Text="{Binding Types}" />
+                  <TextBlock Text="System Message" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding SystemMessage}"
+                           AcceptsReturn="True" MinHeight="60" TextWrapping="Wrap" />
+                  <TextBlock Text="User Prompt" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding UserPrompt}"
+                           AcceptsReturn="True" MinHeight="120" TextWrapping="Wrap" />
+                </StackPanel>
+              </ScrollViewer>
+
+            </Grid>
+
+            <!-- Save bar (editable path only) -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12"
+                        Margin="0,8,0,0" IsVisible="{Binding Inputs.CanEditQueries}">
+              <Button Content="Save queries" Command="{Binding Inputs.SaveQueriesCommand}" />
+              <TextBlock Text="Saved ✓" Foreground="#66BB6A" FontWeight="SemiBold"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Inputs.QueriesSaveSuccess}" />
+              <TextBlock Text="{Binding Inputs.QueriesSaveError}" Foreground="#EF5350"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Inputs.QueriesSaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
           </Grid>
         </TabItem>
 
