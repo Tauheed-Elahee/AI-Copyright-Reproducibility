@@ -540,7 +540,12 @@
                           <TextBox Grid.Column="0" Text="{Binding Key}"   PlaceholderText="key" />
                           <TextBlock Grid.Column="1" Text=" → "
                                      VerticalAlignment="Center" Margin="4,0" />
-                          <TextBox Grid.Column="2" Text="{Binding Value}" PlaceholderText="value" />
+                          <AutoCompleteBox Grid.Column="2"
+                                          Text="{Binding Value}"
+                                          ItemsSource="{Binding $parent[ItemsControl].DataContext.SectionHeadingTexts}"
+                                          FilterMode="ContainsOrdinal"
+                                          MinimumPrefixLength="0"
+                                          PlaceholderText="heading…" />
                           <Button Grid.Column="3" Content="×" Margin="4,0,0,0"
                                   Command="{Binding $parent[ItemsControl].DataContext.DeleteAliasCommand}"
                                   CommandParameter="{Binding}"
@@ -631,9 +636,26 @@
                   <TextBlock Text="Label" FontWeight="SemiBold" FontSize="12" />
                   <TextBox Text="{Binding Label}" />
                   <TextBlock Text="Types" FontWeight="SemiBold" FontSize="12" />
-                  <TextBlock Text="comma-separated, e.g. list_task, order_task" FontSize="11"
-                             Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                  <TextBox Text="{Binding Types}" />
+                  <ItemsControl ItemsSource="{Binding TypeRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,2">
+                          <AutoCompleteBox Grid.Column="0"
+                                          Text="{Binding Text}"
+                                          ItemsSource="{x:Static vm:QueryRowViewModel.TypeSuggestions}"
+                                          FilterMode="ContainsOrdinal"
+                                          MinimumPrefixLength="0"
+                                          PlaceholderText="type…" />
+                          <Button Grid.Column="1" Content="×" Margin="4,0,0,0"
+                                  Command="{Binding $parent[ItemsControl].DataContext.DeleteTypeCommand}"
+                                  CommandParameter="{Binding}"
+                                  Padding="6,2" FontSize="12" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Content="+ Add type" Command="{Binding AddTypeCommand}"
+                          Padding="8,3" FontSize="12" HorizontalAlignment="Left" />
                   <TextBlock Text="System Message" FontWeight="SemiBold" FontSize="12" />
                   <TextBox Text="{Binding SystemMessage}"
                            AcceptsReturn="True" MinHeight="60" TextWrapping="Wrap" />

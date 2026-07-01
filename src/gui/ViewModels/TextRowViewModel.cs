@@ -76,6 +76,9 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
         public int SectionCount => SectionRows.Count;
 
+        public IReadOnlyList<string> SectionHeadingTexts =>
+            SectionRows.Select(r => r.Text).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>    ToggleSectionModeCommand { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>    AddSectionCommand        { get; }
         public ReactiveCommand<SectionHeadingRowViewModel, System.Reactive.Unit> DeleteSectionCommand  { get; }
@@ -90,7 +93,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public TextRowViewModel()
         {
             SectionRows.CollectionChanged += (_, _) =>
+            {
                 this.RaisePropertyChanged(nameof(SectionCount));
+                this.RaisePropertyChanged(nameof(SectionHeadingTexts));
+            };
 
             ToggleSectionModeCommand = ReactiveCommand.Create(ExecuteToggleSectionMode);
             AddSectionCommand        = ReactiveCommand.Create(() =>
