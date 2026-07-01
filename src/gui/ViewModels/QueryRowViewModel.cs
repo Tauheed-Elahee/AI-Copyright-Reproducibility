@@ -8,8 +8,23 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 {
     public sealed class TypeRowViewModel : ViewModelBase
     {
+        private readonly ObservableCollection<TypeRowViewModel> _allRows;
         private string _text = "";
+
+        public TypeRowViewModel(ObservableCollection<TypeRowViewModel> allRows)
+        {
+            _allRows = allRows;
+        }
+
         public string Text { get => _text; set => this.RaiseAndSetIfChanged(ref _text, value); }
+
+        public IReadOnlyList<string> AvailableTypeSuggestions =>
+            QueryRowViewModel.TypeSuggestions
+                .Where(s => s == _text || !_allRows.Any(r => r != this && r.Text == s))
+                .ToList();
+
+        internal void NotifyAvailableSuggestions() =>
+            this.RaisePropertyChanged(nameof(AvailableTypeSuggestions));
     }
 
     public sealed class QueryRowViewModel : ViewModelBase
@@ -56,13 +71,30 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
         public QueryRowViewModel()
         {
-            TypeRows.CollectionChanged += (_, _) =>
-                this.RaisePropertyChanged(nameof(Types));
+            TypeRows.CollectionChanged += (_, e) =>
+            {
+                if (e.NewItems != null)
+                    foreach (TypeRowViewModel row in e.NewItems)
+                        row.PropertyChanged += (_, args) =>
+                        {
+                            if (args.PropertyName == nameof(TypeRowViewModel.Text))
+                                RefreshSuggestions();
+                        };
+
+                RefreshSuggestions();
+            };
 
             AddTypeCommand    = ReactiveCommand.Create(() =>
-                TypeRows.Add(new TypeRowViewModel()));
+                TypeRows.Add(new TypeRowViewModel(TypeRows)));
             DeleteTypeCommand = ReactiveCommand.Create<TypeRowViewModel>(
                 row => TypeRows.Remove(row));
+        }
+
+        private void RefreshSuggestions()
+        {
+            this.RaisePropertyChanged(nameof(Types));
+            foreach (var row in TypeRows)
+                row.NotifyAvailableSuggestions();
         }
 
         public static QueryRowViewModel From(QueryConfig q)
@@ -74,7 +106,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 UserPrompt    = q.UserPrompt
             };
             foreach (var t in q.Types)
-                vm.TypeRows.Add(new TypeRowViewModel { Text = t });
+                vm.TypeRows.Add(new TypeRowViewModel(vm.TypeRows) { Text = t });
             return vm;
         }
 
@@ -83,6 +115,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             Label         = Label,
             Types         = TypeRows.Select(r => r.Text)
                                     .Where(s => !string.IsNullOrWhiteSpace(s))
+                                    .Distinct()
                                     .ToArray(),
             SystemMessage = SystemMessage,
             UserPrompt    = UserPrompt
