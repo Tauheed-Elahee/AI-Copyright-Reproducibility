@@ -37,14 +37,24 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
     public sealed class PromptRowViewModel : ViewModelBase
     {
-        private string                    _textLabel      = "";
-        private readonly IReadOnlyList<string> _allQueryLabels;
+        private readonly ObservableCollection<PromptRowViewModel> _allRows;
+        private readonly IReadOnlyList<string>                    _allTextLabels;
+        private readonly IReadOnlyList<string>                    _allQueryLabels;
+        private string _textLabel = "";
 
         public string TextLabel
         {
             get => _textLabel;
             set => this.RaiseAndSetIfChanged(ref _textLabel, value);
         }
+
+        public IReadOnlyList<string> AvailableTextSuggestions =>
+            _allTextLabels
+                .Where(s => s == _textLabel || !_allRows.Any(r => r != this && r.TextLabel == s))
+                .ToList();
+
+        internal void NotifyAvailableTextSuggestions() =>
+            this.RaisePropertyChanged(nameof(AvailableTextSuggestions));
 
         public ObservableCollection<QueryLinkRowViewModel> QueryLinkRows { get; } = new();
 
@@ -56,8 +66,13 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddQueryLinkCommand    { get; }
         public ReactiveCommand<QueryLinkRowViewModel, System.Reactive.Unit> DeleteQueryLinkCommand { get; }
 
-        public PromptRowViewModel(IReadOnlyList<string> allQueryLabels)
+        public PromptRowViewModel(
+            ObservableCollection<PromptRowViewModel> allRows,
+            IReadOnlyList<string>                    allTextLabels,
+            IReadOnlyList<string>                    allQueryLabels)
         {
+            _allRows        = allRows;
+            _allTextLabels  = allTextLabels;
             _allQueryLabels = allQueryLabels;
 
             QueryLinkRows.CollectionChanged += (_, e) =>
@@ -67,10 +82,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         row.PropertyChanged += (_, args) =>
                         {
                             if (args.PropertyName == nameof(QueryLinkRowViewModel.QueryLabel))
-                                RefreshSuggestions();
+                                RefreshQuerySuggestions();
                         };
 
-                RefreshSuggestions();
+                RefreshQuerySuggestions();
             };
 
             AddQueryLinkCommand = ReactiveCommand.Create(() =>
@@ -79,16 +94,20 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 row => QueryLinkRows.Remove(row));
         }
 
-        private void RefreshSuggestions()
+        private void RefreshQuerySuggestions()
         {
             this.RaisePropertyChanged(nameof(QueriesSummary));
             foreach (var row in QueryLinkRows)
                 row.NotifyAvailableSuggestions();
         }
 
-        public static PromptRowViewModel From(PromptEntry p, IReadOnlyList<string> allQueryLabels)
+        public static PromptRowViewModel From(
+            PromptEntry p,
+            ObservableCollection<PromptRowViewModel> allRows,
+            IReadOnlyList<string>                    allTextLabels,
+            IReadOnlyList<string>                    allQueryLabels)
         {
-            var vm = new PromptRowViewModel(allQueryLabels) { TextLabel = p.Text };
+            var vm = new PromptRowViewModel(allRows, allTextLabels, allQueryLabels) { TextLabel = p.Text };
             foreach (var q in p.Queries)
                 vm.QueryLinkRows.Add(new QueryLinkRowViewModel(vm.QueryLinkRows, allQueryLabels) { QueryLabel = q });
             return vm;

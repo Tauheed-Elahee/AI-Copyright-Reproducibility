@@ -771,7 +771,11 @@
                             IsVisible="{Binding Inputs.SelectedPrompt, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <StackPanel Spacing="8" DataContext="{Binding Inputs.SelectedPrompt}">
                   <TextBlock Text="Text Label" FontWeight="SemiBold" FontSize="12" />
-                  <TextBox Text="{Binding TextLabel}" />
+                  <ctrl:NavAutoCompleteBox Text="{Binding TextLabel}"
+                                          ItemsSource="{Binding AvailableTextSuggestions}"
+                                          FilterMode="ContainsOrdinal"
+                                          MinimumPrefixLength="0"
+                                          PlaceholderText="text label…" />
                   <TextBlock Text="Queries" FontWeight="SemiBold" FontSize="12" />
                   <ItemsControl ItemsSource="{Binding QueryLinkRows}">
                     <ItemsControl.ItemTemplate>

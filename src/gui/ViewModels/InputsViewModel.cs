@@ -165,8 +165,15 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 this.RaisePropertyChanged(nameof(HasTexts));
                 this.RaisePropertyChanged(nameof(TextsHeader));
             };
-            PromptRows.CollectionChanged += (_, _) =>
+            PromptRows.CollectionChanged += (_, e) =>
             {
+                if (e.NewItems != null)
+                    foreach (PromptRowViewModel row in e.NewItems)
+                        row.PropertyChanged += (_, args) =>
+                        {
+                            if (args.PropertyName == nameof(PromptRowViewModel.TextLabel))
+                                RefreshPromptSuggestions();
+                        };
                 this.RaisePropertyChanged(nameof(HasPrompts));
                 this.RaisePropertyChanged(nameof(PromptsHeader));
             };
@@ -202,10 +209,11 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Texts.Add(TextRowViewModel.From(t));
             SelectedText = Texts.FirstOrDefault();
 
+            var textLabels  = Texts.Select(t => t.Label).ToList();
             var queryLabels = Queries.Select(q => q.Label).ToList();
             PromptRows.Clear();
             foreach (var p in prompts)
-                PromptRows.Add(PromptRowViewModel.From(p, queryLabels));
+                PromptRows.Add(PromptRowViewModel.From(p, PromptRows, textLabels, queryLabels));
             SelectedPrompt = PromptRows.FirstOrDefault();
 
             QueriesFilePath    = queriesFilePath;
@@ -316,10 +324,17 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
         private void ExecuteAddPrompt()
         {
+            var textLabels  = Texts.Select(t => t.Label).ToList();
             var queryLabels = Queries.Select(q => q.Label).ToList();
-            var p = new PromptRowViewModel(queryLabels) { TextLabel = "new_text" };
+            var p = new PromptRowViewModel(PromptRows, textLabels, queryLabels) { TextLabel = "new_text" };
             PromptRows.Add(p);
             SelectedPrompt = p;
+        }
+
+        private void RefreshPromptSuggestions()
+        {
+            foreach (var row in PromptRows)
+                row.NotifyAvailableTextSuggestions();
         }
 
         private void ExecuteDeletePrompt()
