@@ -361,7 +361,8 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     settingsVm.LoadFrom(expCfg, expFilePath);
 
                     // ── Deployments ───────────────────────────────────────────
-                    List<DeploymentConfig> deployments = cfg.Deployments;
+                    List<DeploymentConfig> deployments     = cfg.Deployments;
+                    string?                deploymentsFile = null;
                     if (cfg.Project.Fs.Config.Files?.Deployments is { } df)
                     {
                         string p = System.IO.Path.IsPathRooted(df) ? df : System.IO.Path.Combine(configLocDir, df);
@@ -373,6 +374,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                                 .Select(e => JsonSerializer.Deserialize<DeploymentConfig>(
                                     e.GetRawText(), ProjectLoader.ReadOpts)!)
                                 .ToList();
+                            deploymentsFile = p;
                         }
                     }
 
@@ -445,9 +447,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
                     return new
                     {
-                        Settings     = settingsVm,
-                        PreviousRuns = runs,
-                        Deployments  = deployments,
+                        Settings         = settingsVm,
+                        PreviousRuns     = runs,
+                        Deployments      = deployments,
+                        DeploymentsFile  = deploymentsFile,
                         Secrets      = secretsCfg,
                         SecretsFile  = secretsFile,
                         Queries      = queries,
@@ -462,7 +465,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Settings = result.Settings;
 
                 var deploymentsVm = new DeploymentsViewModel();
-                deploymentsVm.LoadFrom(result.Deployments);
+                deploymentsVm.LoadFrom(result.Deployments, result.DeploymentsFile);
                 Deployments = deploymentsVm;
 
                 var secretsVm = new SecretsViewModel();

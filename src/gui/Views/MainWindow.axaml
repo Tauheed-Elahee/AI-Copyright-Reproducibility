@@ -317,76 +317,183 @@
       </ScrollViewer>
 
       <!-- ── Deployments ───────────────────────────────────────────────── -->
-      <ScrollViewer Margin="12" IsVisible="{Binding IsDeploymentsPage}">
-        <StackPanel x:CompileBindings="False" Spacing="14">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="12,8,12,12"
+            IsVisible="{Binding IsDeploymentsPage}"
+            x:CompileBindings="False">
 
-          <TextBlock Text="Deployments" FontWeight="Bold" FontSize="18" />
+        <TextBlock Grid.Row="0" Text="Deployments" FontWeight="Bold" FontSize="18" Margin="0,0,0,8" />
 
-          <TextBlock Text="No deployments configured."
-                     IsVisible="{Binding !Deployments.HasItems}" />
+        <!-- No-file state (deployments embedded in project.json) -->
+        <TextBlock Grid.Row="1"
+                   Text="No deployments file found (config/deployments.json)."
+                   IsVisible="{Binding !Deployments.CanEdit}"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   VerticalAlignment="Top" Margin="0,8" />
 
-          <ItemsControl ItemsSource="{Binding Deployments.Items}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                        BorderThickness="1" CornerRadius="4" Padding="14,12" Margin="0,0,0,10">
-                  <Grid RowDefinitions="Auto,Auto">
+        <!-- Master-detail -->
+        <Grid Grid.Row="1" ColumnDefinitions="180,4,*"
+              IsVisible="{Binding Deployments.CanEdit}">
 
-                    <!-- Name + mode badge -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                      <TextBlock Grid.Column="0"
-                                 Text="{Binding Label}"
-                                 FontWeight="Bold" FontSize="14"
-                                 VerticalAlignment="Center" />
-                      <Border Grid.Column="1"
-                              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                              BorderThickness="1" CornerRadius="3" Padding="6,2">
-                        <TextBlock Text="{Binding Mode}" FontSize="12" FontWeight="SemiBold" />
-                      </Border>
+          <!-- Left: list + Add/Delete -->
+          <Grid Grid.Column="0" RowDefinitions="*,Auto">
+            <ListBox Grid.Row="0"
+                     ItemsSource="{Binding Deployments.Deployments}"
+                     SelectedItem="{Binding Deployments.SelectedDeployment}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+              <Button Content="Add"    Command="{Binding Deployments.AddCommand}"    Padding="8,3" FontSize="12" />
+              <Button Content="Delete" Command="{Binding Deployments.DeleteCommand}" Padding="8,3" FontSize="12" />
+            </StackPanel>
+          </Grid>
+
+          <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" />
+
+          <!-- Right: edit form -->
+          <ScrollViewer Grid.Column="2" Padding="12,0,0,0"
+                        IsVisible="{Binding Deployments.SelectedDeployment, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Spacing="8" DataContext="{Binding Deployments.SelectedDeployment}">
+
+              <TextBlock Text="Label" FontWeight="SemiBold" FontSize="12" />
+              <TextBox Text="{Binding Label}" PlaceholderText="deployment label" />
+
+              <TextBlock Text="Mode" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+              <ComboBox ItemsSource="{x:Static vm:DeploymentRowViewModel.AvailableModes}"
+                        SelectedItem="{Binding Mode}" HorizontalAlignment="Stretch" />
+
+              <TextBlock Text="Endpoint" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+              <TextBox Text="{Binding Endpoint}" PlaceholderText="https://..." />
+
+              <!-- Connection fields -->
+              <TextBlock Text="Connection Fields" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+              <ItemsControl ItemsSource="{Binding ConnectionFieldRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="*,8,*,Auto" Margin="0,0,0,4">
+                      <TextBox Grid.Column="0" Text="{Binding Key}"   PlaceholderText="key"   />
+                      <TextBox Grid.Column="2" Text="{Binding Value}" PlaceholderText="value" />
+                      <Button  Grid.Column="3" Content="✕"
+                               Command="{Binding $parent[ItemsControl].DataContext.DeleteConnectionFieldCommand}"
+                               CommandParameter="{Binding}"
+                               Padding="6,3" Margin="4,0,0,0" FontSize="11" />
                     </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add connection field" Command="{Binding AddConnectionFieldCommand}"
+                      Padding="8,3" FontSize="12" />
 
-                    <!-- Body: endpoint + parameters -->
-                    <StackPanel Grid.Row="1" Margin="0,10,0,0" Spacing="6"
-                                IsVisible="{Binding HasBody}">
+              <!-- Parameters -->
+              <TextBlock Text="Parameters" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+              <ItemsControl ItemsSource="{Binding ParameterRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="*,8,*,Auto,Auto" Margin="0,0,0,4">
+                      <TextBox Grid.Column="0" Text="{Binding Key}"   PlaceholderText="key"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12" />
+                      <TextBox Grid.Column="2" Text="{Binding Value}" PlaceholderText="value (JSON or string)"
+                               FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12" />
+                      <Button  Grid.Column="3" Content="✕"
+                               Command="{Binding $parent[ItemsControl].DataContext.DeleteParameterCommand}"
+                               CommandParameter="{Binding}"
+                               Padding="6,3" Margin="4,0,0,0" FontSize="11" />
+                      <Button  Grid.Column="4" Content="▼"
+                               ToolTip.Tip="Move to Unsupported Parameters"
+                               Command="{Binding $parent[ItemsControl].DataContext.DemoteToUnsupportedCommand}"
+                               CommandParameter="{Binding}"
+                               Padding="6,3" Margin="2,0,0,0" FontSize="11" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="Add parameter" Command="{Binding AddParameterCommand}"
+                      Padding="8,3" FontSize="12" />
 
-                      <Grid ColumnDefinitions="110,*" IsVisible="{Binding HasEndpoint}">
-                        <TextBlock Grid.Column="0"
-                                   Text="Endpoint"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   VerticalAlignment="Top" />
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Endpoint}"
-                                   FontSize="13" TextWrapping="Wrap" />
-                      </Grid>
+              <!-- Unsupported Parameters -->
+              <TextBlock Text="Unsupported Parameters" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+              <Grid ColumnDefinitions="120,4,*">
 
-                      <ItemsControl ItemsSource="{Binding Parameters}"
-                                    IsVisible="{Binding HasParameters}">
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate>
-                            <Grid ColumnDefinitions="110,*" Margin="0,0,0,3">
-                              <TextBlock Grid.Column="0"
-                                         Text="{Binding Key}"
-                                         FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                                         FontSize="12" FontWeight="SemiBold" />
-                              <TextBlock Grid.Column="1"
-                                         Text="{Binding Value}"
-                                         FontFamily="Cascadia Code,Consolas,Menlo,monospace"
-                                         FontSize="13" />
-                            </Grid>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
+                <!-- Left: list + Add/Delete -->
+                <Grid Grid.Column="0" RowDefinitions="*,Auto">
+                  <ListBox Grid.Row="0" MaxHeight="150"
+                           ItemsSource="{Binding UnsupportedParameterRows}"
+                           SelectedItem="{Binding SelectedUnsupportedParam}">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Key}" TextTrimming="CharacterEllipsis"
+                                   FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12" />
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                    <Button Content="Add"    Command="{Binding AddUnsupportedParameterCommand}"    Padding="8,3" FontSize="12" />
+                    <Button Content="Delete" Command="{Binding DeleteUnsupportedParameterCommand}" Padding="8,3" FontSize="12" />
+                  </StackPanel>
+                </Grid>
 
-                    </StackPanel>
+                <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" />
 
-                  </Grid>
+                <!-- Right: detail fields -->
+                <Border Grid.Column="2" Padding="12,0,0,0"
+                        IsVisible="{Binding SelectedUnsupportedParam, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="4">
+
+                  <Button Content="▲ Promote to Parameters" Command="{Binding PromoteToParametersCommand}"
+                          Padding="8,3" FontSize="12" HorizontalAlignment="Left" />
+
+                  <TextBlock Text="Key" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding SelectedUnsupportedParam.Key}" PlaceholderText="key"
+                           FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12" />
+
+                  <TextBlock Text="Error Type" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+                  <TextBox Text="{Binding SelectedUnsupportedParam.ErrorType}"
+                           PlaceholderText="response / output / ignored" FontSize="12" />
+
+                  <TextBlock Text="Response Status" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+                  <TextBox Text="{Binding SelectedUnsupportedParam.ResponseStatus}"
+                           PlaceholderText="HTTP status code" FontSize="12" />
+
+                  <TextBlock Text="Intended Value" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+                  <TextBox Text="{Binding SelectedUnsupportedParam.IntendedValue}"
+                           PlaceholderText="intended JSON value"
+                           FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="12" />
+
+                  <TextBlock Text="Reason" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+                  <TextBox Text="{Binding SelectedUnsupportedParam.Reason}"
+                           PlaceholderText="reason" FontSize="12" />
+
+                  <TextBlock Text="Response Content" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+                  <TextBox Text="{Binding SelectedUnsupportedParam.ResponseContent}"
+                           PlaceholderText="response body"
+                           AcceptsReturn="True" MaxHeight="80" FontSize="12" />
+
+                </StackPanel>
                 </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
 
+              </Grid>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </Grid>
+
+        <!-- Save bar -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12"
+                    Margin="0,8,0,0" IsVisible="{Binding Deployments.CanEdit}">
+          <Button Content="Save deployments" Command="{Binding Deployments.SaveCommand}" />
+          <TextBlock Text="Saved ✓" Foreground="#66BB6A" FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding Deployments.SaveSuccess}" />
+          <TextBlock Text="{Binding Deployments.SaveError}" Foreground="#EF5350"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding Deployments.SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
-      </ScrollViewer>
+
+      </Grid>
 
       <!-- ── Secrets ───────────────────────────────────────────────────── -->
       <Grid RowDefinitions="Auto,*,Auto" Margin="12,8,12,12"
