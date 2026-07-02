@@ -3,6 +3,7 @@
         xmlns:vm="using:AICopyrightReproducibility.Gui.ViewModels"
         xmlns:conv="using:AICopyrightReproducibility.Gui.Converters"
         xmlns:sp="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
+        xmlns:ctrl="using:AICopyrightReproducibility.Gui.Controls"
         xmlns:ui="using:FluentAvalonia.UI.Controls"
         x:DataType="vm:MainViewModel"
         x:Class="AICopyrightReproducibility.Gui.Views.MainWindow"
@@ -540,12 +541,12 @@
                           <TextBox Grid.Column="0" Text="{Binding Key}"   PlaceholderText="key" />
                           <TextBlock Grid.Column="1" Text=" → "
                                      VerticalAlignment="Center" Margin="4,0" />
-                          <AutoCompleteBox Grid.Column="2"
-                                          Text="{Binding Value}"
-                                          ItemsSource="{Binding $parent[ItemsControl].DataContext.SectionHeadingTexts}"
-                                          FilterMode="ContainsOrdinal"
-                                          MinimumPrefixLength="0"
-                                          PlaceholderText="heading…" />
+                          <ctrl:NavAutoCompleteBox Grid.Column="2"
+                                               Text="{Binding Value}"
+                                               ItemsSource="{Binding $parent[ItemsControl].DataContext.SectionHeadingTexts}"
+                                               FilterMode="ContainsOrdinal"
+                                               MinimumPrefixLength="0"
+                                               PlaceholderText="heading…" />
                           <Button Grid.Column="3" Content="×" Margin="4,0,0,0"
                                   Command="{Binding $parent[ItemsControl].DataContext.DeleteAliasCommand}"
                                   CommandParameter="{Binding}"
@@ -640,12 +641,12 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
                         <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,2">
-                          <AutoCompleteBox Grid.Column="0"
-                                          Text="{Binding Text}"
-                                          ItemsSource="{Binding AvailableTypeSuggestions}"
-                                          FilterMode="ContainsOrdinal"
-                                          MinimumPrefixLength="0"
-                                          PlaceholderText="type…" />
+                          <ctrl:NavAutoCompleteBox Grid.Column="0"
+                                               Text="{Binding Text}"
+                                               ItemsSource="{Binding AvailableTypeSuggestions}"
+                                               FilterMode="ContainsOrdinal"
+                                               MinimumPrefixLength="0"
+                                               PlaceholderText="type…" />
                           <Button Grid.Column="1" Content="×" Margin="4,0,0,0"
                                   Command="{Binding $parent[ItemsControl].DataContext.DeleteTypeCommand}"
                                   CommandParameter="{Binding}"
@@ -744,12 +745,12 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
                         <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,2">
-                          <AutoCompleteBox Grid.Column="0"
-                                          Text="{Binding QueryLabel}"
-                                          ItemsSource="{Binding AvailableQuerySuggestions}"
-                                          FilterMode="ContainsOrdinal"
-                                          MinimumPrefixLength="0"
-                                          PlaceholderText="query…" />
+                          <ctrl:NavAutoCompleteBox Grid.Column="0"
+                                               Text="{Binding QueryLabel}"
+                                               ItemsSource="{Binding AvailableQuerySuggestions}"
+                                               FilterMode="ContainsOrdinal"
+                                               MinimumPrefixLength="0"
+                                               PlaceholderText="query…" />
                           <Button Grid.Column="1" Content="×" Margin="4,0,0,0"
                                   Command="{Binding $parent[ItemsControl].DataContext.DeleteQueryLinkCommand}"
                                   CommandParameter="{Binding}"
