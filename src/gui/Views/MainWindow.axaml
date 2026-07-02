@@ -715,6 +715,24 @@
                   <TextBlock Text="User Prompt" FontWeight="SemiBold" FontSize="12" />
                   <TextBox Text="{Binding UserPrompt}"
                            AcceptsReturn="True" MinHeight="120" TextWrapping="Wrap" />
+                  <TextBlock Text="Available placeholders" FontWeight="SemiBold" FontSize="12" Margin="0,4,0,0" />
+                  <ItemsControl ItemsSource="{Binding $parent[ScrollViewer].DataContext.Inputs.AvailablePlaceholders}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                CornerRadius="3" Padding="6,2" Margin="0,2,4,2">
+                          <TextBlock Text="{Binding}"
+                                     FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                     FontSize="12" />
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
                 </StackPanel>
               </ScrollViewer>
 

@@ -136,6 +136,24 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public bool HasTexts   => Texts.Count > 0;
         public bool HasPrompts => PromptRows.Count > 0;
 
+        private static readonly IReadOnlyList<string> BuiltInPlaceholders =
+            new[] { "{title}", "{sections}", "{sections_shuffled}" };
+
+        public IReadOnlyList<string> AvailablePlaceholders
+        {
+            get
+            {
+                var extras = Texts
+                    .SelectMany(t => t.ExtraFieldRows)
+                    .Select(r => r.Key)
+                    .Where(k => !string.IsNullOrWhiteSpace(k))
+                    .Distinct()
+                    .OrderBy(k => k)
+                    .Select(k => "{" + k + "}");
+                return BuiltInPlaceholders.Concat(extras).ToList();
+            }
+        }
+
         public string TextsHeader   => $"Texts ({Texts.Count})";
         public string QueriesHeader => $"Queries ({Queries.Count})";
         public string PromptsHeader => $"Prompts ({PromptRows.Count})";
@@ -160,10 +178,14 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 this.RaisePropertyChanged(nameof(HasQueries));
                 this.RaisePropertyChanged(nameof(QueriesHeader));
             };
-            Texts.CollectionChanged += (_, _) =>
+            Texts.CollectionChanged += (_, e) =>
             {
+                if (e.NewItems != null)
+                    foreach (TextRowViewModel t in e.NewItems)
+                        SubscribeTextExtraFields(t);
                 this.RaisePropertyChanged(nameof(HasTexts));
                 this.RaisePropertyChanged(nameof(TextsHeader));
+                this.RaisePropertyChanged(nameof(AvailablePlaceholders));
             };
             PromptRows.CollectionChanged += (_, e) =>
             {
@@ -329,6 +351,18 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             var p = new PromptRowViewModel(PromptRows, textLabels, queryLabels) { TextLabel = "new_text" };
             PromptRows.Add(p);
             SelectedPrompt = p;
+        }
+
+        private void SubscribeTextExtraFields(TextRowViewModel t)
+        {
+            t.ExtraFieldRows.CollectionChanged += (_, fe) =>
+            {
+                if (fe.NewItems != null)
+                    foreach (ExtraFieldRowViewModel r in fe.NewItems)
+                        r.PropertyChanged += (_, _) =>
+                            this.RaisePropertyChanged(nameof(AvailablePlaceholders));
+                this.RaisePropertyChanged(nameof(AvailablePlaceholders));
+            };
         }
 
         private void RefreshPromptSuggestions()
