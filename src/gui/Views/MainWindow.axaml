@@ -389,42 +389,74 @@
       </ScrollViewer>
 
       <!-- ── Secrets ───────────────────────────────────────────────────── -->
-      <ScrollViewer Margin="12" IsVisible="{Binding IsSecretsPage}">
-        <StackPanel x:CompileBindings="False" Spacing="12">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="12,8,12,12"
+            IsVisible="{Binding IsSecretsPage}"
+            x:CompileBindings="False">
 
-          <TextBlock Text="Secrets" FontWeight="Bold" FontSize="18" />
+        <TextBlock Grid.Row="0" Text="Secrets" FontWeight="Bold" FontSize="18" Margin="0,0,0,8" />
 
-          <TextBlock Text="No secrets file found (config/secrets.json)."
-                     IsVisible="{Binding !Secrets.HasItems}"
-                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                     Margin="0,8" />
+        <!-- Empty / no-file state -->
+        <TextBlock Grid.Row="1"
+                   Text="No secrets file found (config/secrets.json)."
+                   IsVisible="{Binding !Secrets.CanEdit}"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   VerticalAlignment="Top"
+                   Margin="0,8" />
 
-          <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                  BorderThickness="1" CornerRadius="4" Padding="10,8"
-                  IsVisible="{Binding Secrets.HasItems}">
-            <StackPanel>
-              <TextBlock Text="Keys" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" />
-              <ItemsControl ItemsSource="{Binding Secrets.Items}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Grid ColumnDefinitions="200,*,Auto" Margin="0,3,0,3">
-                      <TextBlock Grid.Column="0" Text="{Binding Key}"
-                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="13"
-                                 VerticalAlignment="Center" />
-                      <TextBlock Grid.Column="1" Text="{Binding DisplayValue}"
-                                 FontFamily="Cascadia Code,Consolas,Menlo,monospace" FontSize="13"
-                                 VerticalAlignment="Center" />
-                      <ToggleButton Grid.Column="2" Content="Show" IsChecked="{Binding ShowValue}"
-                                    Padding="8,2" FontSize="12" />
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
+        <!-- Editable master-detail -->
+        <Grid Grid.Row="1" ColumnDefinitions="180,4,*"
+              IsVisible="{Binding Secrets.CanEdit}">
+
+          <!-- Left: list + add / delete -->
+          <Grid Grid.Column="0" RowDefinitions="*,Auto">
+            <ListBox Grid.Row="0"
+                     ItemsSource="{Binding Secrets.Rows}"
+                     SelectedItem="{Binding Secrets.SelectedRow}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Key}" TextTrimming="CharacterEllipsis" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+              <Button Content="Add"    Command="{Binding Secrets.AddCommand}"    Padding="8,3" FontSize="12" />
+              <Button Content="Delete" Command="{Binding Secrets.DeleteCommand}" Padding="8,3" FontSize="12" />
             </StackPanel>
-          </Border>
+          </Grid>
 
+          <!-- Splitter -->
+          <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" />
+
+          <!-- Right: edit form -->
+          <ScrollViewer Grid.Column="2" Padding="12,0,0,0"
+                        IsVisible="{Binding Secrets.SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Spacing="8" DataContext="{Binding Secrets.SelectedRow}">
+
+              <TextBlock Text="Name" FontWeight="SemiBold" FontSize="12" />
+              <TextBox Text="{Binding Key}" PlaceholderText="key name" />
+
+              <TextBlock Text="Value" FontWeight="SemiBold" FontSize="12" />
+              <TextBox Text="{Binding Value}" PlaceholderText="secret value" />
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </Grid>
+
+        <!-- Save bar -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12"
+                    Margin="0,8,0,0"
+                    IsVisible="{Binding Secrets.CanEdit}">
+          <Button Content="Save secrets" Command="{Binding Secrets.SaveCommand}" />
+          <TextBlock Text="Saved ✓" Foreground="#66BB6A" FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding Secrets.SaveSuccess}" />
+          <TextBlock Text="{Binding Secrets.SaveError}" Foreground="#EF5350"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding Secrets.SaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
-      </ScrollViewer>
+
+      </Grid>
 
       <!-- ── Inputs ────────────────────────────────────────────────────── -->
       <Grid RowDefinitions="Auto,*" Margin="12,8,12,12" IsVisible="{Binding IsInputsPage}">

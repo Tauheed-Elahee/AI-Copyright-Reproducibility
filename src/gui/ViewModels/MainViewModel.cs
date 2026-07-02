@@ -378,10 +378,12 @@ namespace AICopyrightReproducibility.Gui.ViewModels
 
                     // ── Secrets ───────────────────────────────────────────────
                     string secretsPath = System.IO.Path.Combine(configLocDir, "secrets.json");
-                    SecretsConfig secretsCfg = File.Exists(secretsPath)
+                    bool   secretsExists = File.Exists(secretsPath);
+                    SecretsConfig secretsCfg = secretsExists
                         ? JsonSerializer.Deserialize<SecretsConfig>(
                               File.ReadAllText(secretsPath), ProjectLoader.ReadOpts) ?? new()
                         : new();
+                    string? secretsFile = secretsExists ? secretsPath : null;
 
                     // ── Queries ───────────────────────────────────────────────
                     List<QueryConfig> queries     = cfg.Queries;
@@ -447,6 +449,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         PreviousRuns = runs,
                         Deployments  = deployments,
                         Secrets      = secretsCfg,
+                        SecretsFile  = secretsFile,
                         Queries      = queries,
                         QueriesFile  = queriesFile,
                         Texts        = texts,
@@ -463,7 +466,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Deployments = deploymentsVm;
 
                 var secretsVm = new SecretsViewModel();
-                secretsVm.LoadFrom(result.Secrets);
+                secretsVm.LoadFrom(result.Secrets, result.SecretsFile);
                 Secrets = secretsVm;
 
                 var inputsVm = new InputsViewModel();
