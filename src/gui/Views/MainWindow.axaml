@@ -529,6 +529,26 @@
                   <TextBlock Text="Title (short)" FontWeight="SemiBold" FontSize="12" />
                   <TextBox Text="{Binding TitleShort}" />
 
+                  <TextBlock Text="Title (extra fields)" FontWeight="SemiBold" FontSize="12" />
+                  <ItemsControl ItemsSource="{Binding ExtraFieldRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto,*,Auto" Margin="0,2,0,2">
+                          <TextBox Grid.Column="0" Text="{Binding Key}"   PlaceholderText="key" />
+                          <TextBlock Grid.Column="1" Text=" : "
+                                     VerticalAlignment="Center" Margin="4,0" />
+                          <TextBox Grid.Column="2" Text="{Binding Value}" PlaceholderText="value" />
+                          <Button Grid.Column="3" Content="×" Margin="4,0,0,0"
+                                  Command="{Binding $parent[ItemsControl].DataContext.DeleteExtraFieldCommand}"
+                                  CommandParameter="{Binding}"
+                                  Padding="6,2" FontSize="12" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Content="+ Add field" Command="{Binding AddExtraFieldCommand}"
+                          Padding="8,3" FontSize="12" HorizontalAlignment="Left" />
+
                   <!-- Section Headings header with mode toggle -->
                   <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0" Text="Section Headings"

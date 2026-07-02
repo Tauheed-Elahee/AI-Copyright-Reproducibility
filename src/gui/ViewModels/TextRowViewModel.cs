@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using ReactiveUI;
@@ -9,6 +10,15 @@ using AICopyrightReproducibility.Config;
 namespace AICopyrightReproducibility.Gui.ViewModels
 {
     public sealed class AliasRowViewModel : ViewModelBase
+    {
+        private string _key   = "";
+        private string _value = "";
+
+        public string Key   { get => _key;   set => this.RaiseAndSetIfChanged(ref _key,   value); }
+        public string Value { get => _value; set => this.RaiseAndSetIfChanged(ref _value, value); }
+    }
+
+    public sealed class ExtraFieldRowViewModel : ViewModelBase
     {
         private string _key   = "";
         private string _value = "";
@@ -31,8 +41,6 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         private string _sectionHeadings = "";
         private bool   _isSectionMassEditMode;
 
-        private Dictionary<string, JsonElement>? _extraFields;
-
         public string Label
         {
             get => _label;
@@ -50,6 +58,13 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             get => _titleShort;
             set => this.RaiseAndSetIfChanged(ref _titleShort, value);
         }
+
+        // ── Extra title fields ────────────────────────────────────────────────
+
+        public ObservableCollection<ExtraFieldRowViewModel> ExtraFieldRows { get; } = new();
+
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>    AddExtraFieldCommand    { get; }
+        public ReactiveCommand<ExtraFieldRowViewModel, System.Reactive.Unit>  DeleteExtraFieldCommand { get; }
 
         // ── Section headings ──────────────────────────────────────────────────
 
@@ -79,9 +94,9 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         public IReadOnlyList<string> SectionHeadingTexts =>
             SectionRows.Select(r => r.Text).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
 
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>    ToggleSectionModeCommand { get; }
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>    AddSectionCommand        { get; }
-        public ReactiveCommand<SectionHeadingRowViewModel, System.Reactive.Unit> DeleteSectionCommand  { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>       ToggleSectionModeCommand { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit>       AddSectionCommand        { get; }
+        public ReactiveCommand<SectionHeadingRowViewModel, System.Reactive.Unit> DeleteSectionCommand     { get; }
 
         // ── Aliases ───────────────────────────────────────────────────────────
 
@@ -98,6 +113,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 this.RaisePropertyChanged(nameof(SectionHeadingTexts));
             };
 
+            AddExtraFieldCommand    = ReactiveCommand.Create(() => ExtraFieldRows.Add(new ExtraFieldRowViewModel()));
+            DeleteExtraFieldCommand = ReactiveCommand.Create<ExtraFieldRowViewModel>(
+                row => ExtraFieldRows.Remove(row));
+
             ToggleSectionModeCommand = ReactiveCommand.Create(ExecuteToggleSectionMode);
             AddSectionCommand        = ReactiveCommand.Create(() =>
                 SectionRows.Add(new SectionHeadingRowViewModel()));
@@ -113,13 +132,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         {
             if (!_isSectionMassEditMode)
             {
-                // List → Mass Edit: serialise rows to string
-                SectionHeadings = string.Join('\n',
-                    SectionRows.Select(r => r.Text));
+                SectionHeadings = string.Join('\n', SectionRows.Select(r => r.Text));
             }
             else
             {
-                // Mass Edit → List: parse string back to rows
                 SectionRows.Clear();
                 foreach (var line in _sectionHeadings
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -132,11 +148,18 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         {
             var vm = new TextRowViewModel
             {
-                Label        = t.Label,
-                TitleFull    = t.Content.Title.Full,
-                TitleShort   = t.Content.Title.Short,
-                _extraFields = t.Content.Title.ExtraFields
+                Label      = t.Label,
+                TitleFull  = t.Content.Title.Full,
+                TitleShort = t.Content.Title.Short,
             };
+
+            if (t.Content.Title.ExtraFields != null)
+                foreach (var (k, v) in t.Content.Title.ExtraFields)
+                    vm.ExtraFieldRows.Add(new ExtraFieldRowViewModel
+                    {
+                        Key   = k,
+                        Value = ElementToDisplay(v)
+                    });
 
             foreach (var h in t.Content.SectionHeadings)
                 vm.SectionRows.Add(new SectionHeadingRowViewModel { Text = h });
@@ -157,6 +180,12 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .ToArray();
 
+            Dictionary<string, JsonElement>? extras = ExtraFieldRows.Count > 0
+                ? ExtraFieldRows
+                    .Where(r => !string.IsNullOrWhiteSpace(r.Key))
+                    .ToDictionary(r => r.Key, r => ParseJsonValue(r.Value))
+                : null;
+
             return new TextDbEntry
             {
                 Label = Label,
@@ -166,7 +195,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                     {
                         Full        = TitleFull,
                         Short       = TitleShort,
-                        ExtraFields = _extraFields
+                        ExtraFields = extras
                     },
                     SectionHeadings = headings,
                     Aliases = AliasRows
@@ -174,6 +203,35 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                         .ToDictionary(r => r.Key, r => r.Value)
                 }
             };
+        }
+
+        // Converts a JsonElement to its display string for the Value TextBox.
+        private static string ElementToDisplay(JsonElement el) => el.ValueKind switch
+        {
+            JsonValueKind.String => el.GetString() ?? "",
+            JsonValueKind.True   => "true",
+            JsonValueKind.False  => "false",
+            JsonValueKind.Null   => "",
+            _                    => el.GetRawText()   // numbers, and any complex types verbatim
+        };
+
+        // Converts a display string back to a JsonElement.
+        // Integers and decimals become JSON numbers; "true"/"false" become booleans;
+        // everything else becomes a JSON string.
+        private static JsonElement ParseJsonValue(string s)
+        {
+            string json;
+            if (long.TryParse(s, out _))
+                json = s;
+            else if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+                json = s;
+            else if (s is "true" or "false")
+                json = s;
+            else
+                json = JsonSerializer.Serialize(s);
+
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.Clone();
         }
     }
 }
