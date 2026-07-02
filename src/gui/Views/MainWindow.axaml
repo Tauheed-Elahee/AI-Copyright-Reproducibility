@@ -683,19 +683,100 @@
         </TabItem>
 
         <TabItem Header="{Binding Inputs.PromptsHeader}">
-          <Grid Margin="0,8,0,0">
-            <TextBlock Text="No prompts loaded."
-                       IsVisible="{Binding !Inputs.HasPrompts}"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            <DataGrid ItemsSource="{Binding Inputs.Prompts}"
-                      AutoGenerateColumns="False" IsReadOnly="True"
-                      GridLinesVisibility="Horizontal"
-                      IsVisible="{Binding Inputs.HasPrompts}">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Text"    Binding="{Binding TextLabel}" Width="160" />
-                <DataGridTextColumn Header="Queries" Binding="{Binding Queries}"   Width="*" />
-              </DataGrid.Columns>
-            </DataGrid>
+          <Grid Margin="0,8,0,0" RowDefinitions="*,Auto">
+
+            <!-- Read-only path: prompts embedded in project.json or no file -->
+            <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*"
+                  IsVisible="{Binding !Inputs.CanEditPrompts}">
+              <TextBlock Grid.Row="0"
+                         Text="No prompts loaded."
+                         IsVisible="{Binding !Inputs.HasPrompts}"
+                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <TextBlock Grid.Row="1"
+                         Text="Prompts are embedded in project.json and cannot be edited here."
+                         Foreground="#FF7043" TextWrapping="Wrap"
+                         IsVisible="{Binding Inputs.HasPrompts}"
+                         Margin="0,0,0,8" />
+              <DataGrid Grid.Row="2"
+                        ItemsSource="{Binding Inputs.PromptRows}"
+                        AutoGenerateColumns="False" IsReadOnly="True"
+                        GridLinesVisibility="Horizontal"
+                        IsVisible="{Binding Inputs.HasPrompts}">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Text"    Binding="{Binding TextLabel}"      Width="160" />
+                  <DataGridTextColumn Header="Queries" Binding="{Binding QueriesSummary}" Width="*" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+
+            <!-- Editable path: prompts in a separate file -->
+            <Grid Grid.Row="0" ColumnDefinitions="180,4,*"
+                  IsVisible="{Binding Inputs.CanEditPrompts}">
+
+              <!-- Left: list + add / delete -->
+              <Grid Grid.Column="0" RowDefinitions="*,Auto">
+                <ListBox Grid.Row="0"
+                         ItemsSource="{Binding Inputs.PromptRows}"
+                         SelectedItem="{Binding Inputs.SelectedPrompt}">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding TextLabel}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                  <Button Content="Add"    Command="{Binding Inputs.AddPromptCommand}"    Padding="8,3" FontSize="12" />
+                  <Button Content="Delete" Command="{Binding Inputs.DeletePromptCommand}" Padding="8,3" FontSize="12" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Splitter -->
+              <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" />
+
+              <!-- Right: edit form -->
+              <ScrollViewer Grid.Column="2" Padding="12,0,0,0"
+                            IsVisible="{Binding Inputs.SelectedPrompt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="8" DataContext="{Binding Inputs.SelectedPrompt}">
+                  <TextBlock Text="Text Label" FontWeight="SemiBold" FontSize="12" />
+                  <TextBox Text="{Binding TextLabel}" />
+                  <TextBlock Text="Queries" FontWeight="SemiBold" FontSize="12" />
+                  <ItemsControl ItemsSource="{Binding QueryLinkRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,2">
+                          <AutoCompleteBox Grid.Column="0"
+                                          Text="{Binding QueryLabel}"
+                                          ItemsSource="{Binding AvailableQuerySuggestions}"
+                                          FilterMode="ContainsOrdinal"
+                                          MinimumPrefixLength="0"
+                                          PlaceholderText="query…" />
+                          <Button Grid.Column="1" Content="×" Margin="4,0,0,0"
+                                  Command="{Binding $parent[ItemsControl].DataContext.DeleteQueryLinkCommand}"
+                                  CommandParameter="{Binding}"
+                                  Padding="6,2" FontSize="12" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Content="+ Add query" Command="{Binding AddQueryLinkCommand}"
+                          Padding="8,3" FontSize="12" HorizontalAlignment="Left" />
+                </StackPanel>
+              </ScrollViewer>
+
+            </Grid>
+
+            <!-- Save bar (editable path only) -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12"
+                        Margin="0,8,0,0" IsVisible="{Binding Inputs.CanEditPrompts}">
+              <Button Content="Save prompts" Command="{Binding Inputs.SavePromptsCommand}" />
+              <TextBlock Text="Saved ✓" Foreground="#66BB6A" FontWeight="SemiBold"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Inputs.PromptsSaveSuccess}" />
+              <TextBlock Text="{Binding Inputs.PromptsSaveError}" Foreground="#EF5350"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding Inputs.PromptsSaveError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
           </Grid>
         </TabItem>
 

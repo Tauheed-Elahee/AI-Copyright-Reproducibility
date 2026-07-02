@@ -13,8 +13,6 @@ using AICopyrightReproducibility.Utils;
 
 namespace AICopyrightReproducibility.Gui.ViewModels
 {
-    public sealed record PromptDisplayItem(string TextLabel, string Queries);
-
     public sealed class InputsViewModel : ViewModelBase
     {
         // ── Queries state ─────────────────────────────────────────────────────
@@ -29,10 +27,16 @@ namespace AICopyrightReproducibility.Gui.ViewModels
         private string?           _textsSaveError;
         private bool              _textsSaveSuccess;
 
+        // ── Prompts state ─────────────────────────────────────────────────────
+        private PromptRowViewModel? _selectedPrompt;
+        private string?             _promptsFilePath;
+        private string?             _promptsSaveError;
+        private bool                _promptsSaveSuccess;
+
         // ── Collections ───────────────────────────────────────────────────────
-        public ObservableCollection<QueryRowViewModel> Queries { get; } = new();
-        public ObservableCollection<TextRowViewModel>  Texts   { get; } = new();
-        public ObservableCollection<PromptDisplayItem> Prompts { get; } = new();
+        public ObservableCollection<QueryRowViewModel>  Queries    { get; } = new();
+        public ObservableCollection<TextRowViewModel>   Texts      { get; } = new();
+        public ObservableCollection<PromptRowViewModel> PromptRows { get; } = new();
 
         // ── Query properties ──────────────────────────────────────────────────
         public QueryRowViewModel? SelectedQuery
@@ -96,23 +100,58 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _textsSaveSuccess, value);
         }
 
+        // ── Prompt properties ─────────────────────────────────────────────────
+        public PromptRowViewModel? SelectedPrompt
+        {
+            get => _selectedPrompt;
+            set => this.RaiseAndSetIfChanged(ref _selectedPrompt, value);
+        }
+
+        public string? PromptsFilePath
+        {
+            get => _promptsFilePath;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _promptsFilePath, value);
+                this.RaisePropertyChanged(nameof(CanEditPrompts));
+            }
+        }
+
+        public bool CanEditPrompts => _promptsFilePath != null;
+
+        public string? PromptsSaveError
+        {
+            get => _promptsSaveError;
+            private set => this.RaiseAndSetIfChanged(ref _promptsSaveError, value);
+        }
+
+        public bool PromptsSaveSuccess
+        {
+            get => _promptsSaveSuccess;
+            private set => this.RaiseAndSetIfChanged(ref _promptsSaveSuccess, value);
+        }
+
         // ── Derived counts ────────────────────────────────────────────────────
         public bool HasQueries => Queries.Count > 0;
         public bool HasTexts   => Texts.Count > 0;
-        public bool HasPrompts => Prompts.Count > 0;
+        public bool HasPrompts => PromptRows.Count > 0;
 
         public string TextsHeader   => $"Texts ({Texts.Count})";
         public string QueriesHeader => $"Queries ({Queries.Count})";
-        public string PromptsHeader => $"Prompts ({Prompts.Count})";
+        public string PromptsHeader => $"Prompts ({PromptRows.Count})";
 
         // ── Commands ──────────────────────────────────────────────────────────
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveQueriesCommand { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddQueryCommand    { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DeleteQueryCommand { get; }
 
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveTextsCommand { get; }
-        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddTextCommand   { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveTextsCommand  { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddTextCommand    { get; }
         public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DeleteTextCommand { get; }
+
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SavePromptsCommand  { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddPromptCommand    { get; }
+        public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DeletePromptCommand { get; }
 
         public InputsViewModel()
         {
@@ -126,7 +165,7 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 this.RaisePropertyChanged(nameof(HasTexts));
                 this.RaisePropertyChanged(nameof(TextsHeader));
             };
-            Prompts.CollectionChanged += (_, _) =>
+            PromptRows.CollectionChanged += (_, _) =>
             {
                 this.RaisePropertyChanged(nameof(HasPrompts));
                 this.RaisePropertyChanged(nameof(PromptsHeader));
@@ -141,12 +180,17 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             AddTextCommand   = ReactiveCommand.Create(ExecuteAddText);
             DeleteTextCommand = ReactiveCommand.Create(ExecuteDeleteText,
                 this.WhenAnyValue(x => x.SelectedText).Select(t => t != null));
+
+            SavePromptsCommand  = ReactiveCommand.Create(ExecuteSavePrompts);
+            AddPromptCommand    = ReactiveCommand.Create(ExecuteAddPrompt);
+            DeletePromptCommand = ReactiveCommand.Create(ExecuteDeletePrompt,
+                this.WhenAnyValue(x => x.SelectedPrompt).Select(p => p != null));
         }
 
         public void LoadFrom(
             List<QueryConfig> queries, string? queriesFilePath,
             List<TextDbEntry> texts,   string? textsFilePath,
-            List<PromptEntry> prompts)
+            List<PromptEntry> prompts, string? promptsFilePath)
         {
             Queries.Clear();
             foreach (var q in queries)
@@ -158,11 +202,11 @@ namespace AICopyrightReproducibility.Gui.ViewModels
                 Texts.Add(TextRowViewModel.From(t));
             SelectedText = Texts.FirstOrDefault();
 
-            Prompts.Clear();
+            var queryLabels = Queries.Select(q => q.Label).ToList();
+            PromptRows.Clear();
             foreach (var p in prompts)
-                Prompts.Add(new PromptDisplayItem(
-                    p.Text,
-                    string.Join(", ", p.Queries)));
+                PromptRows.Add(PromptRowViewModel.From(p, queryLabels));
+            SelectedPrompt = PromptRows.FirstOrDefault();
 
             QueriesFilePath    = queriesFilePath;
             QueriesSaveError   = null;
@@ -171,6 +215,10 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             TextsFilePath    = textsFilePath;
             TextsSaveError   = null;
             TextsSaveSuccess = false;
+
+            PromptsFilePath    = promptsFilePath;
+            PromptsSaveError   = null;
+            PromptsSaveSuccess = false;
         }
 
         // ── Query commands ────────────────────────────────────────────────────
@@ -243,6 +291,43 @@ namespace AICopyrightReproducibility.Gui.ViewModels
             int idx = Texts.IndexOf(SelectedText);
             Texts.Remove(SelectedText);
             SelectedText = Texts.Count > 0 ? Texts[Math.Max(0, idx - 1)] : null;
+        }
+
+        // ── Prompt commands ───────────────────────────────────────────────────
+
+        private void ExecuteSavePrompts()
+        {
+            if (_promptsFilePath == null) return;
+            try
+            {
+                var wrapper = new { prompts = PromptRows.Select(p => p.ToConfig()).ToList() };
+                var opts    = new JsonSerializerOptions(ProjectLoader.ReadOpts) { WriteIndented = true };
+                File.WriteAllText(_promptsFilePath, JsonSerializer.Serialize(wrapper, opts));
+                PromptsSaveError   = null;
+                PromptsSaveSuccess = true;
+                _ = Task.Delay(2500).ContinueWith(_ =>
+                    Dispatcher.UIThread.Post(() => PromptsSaveSuccess = false));
+            }
+            catch (Exception ex)
+            {
+                PromptsSaveError = $"Save failed: {ex.Message}";
+            }
+        }
+
+        private void ExecuteAddPrompt()
+        {
+            var queryLabels = Queries.Select(q => q.Label).ToList();
+            var p = new PromptRowViewModel(queryLabels) { TextLabel = "new_text" };
+            PromptRows.Add(p);
+            SelectedPrompt = p;
+        }
+
+        private void ExecuteDeletePrompt()
+        {
+            if (SelectedPrompt == null) return;
+            int idx = PromptRows.IndexOf(SelectedPrompt);
+            PromptRows.Remove(SelectedPrompt);
+            SelectedPrompt = PromptRows.Count > 0 ? PromptRows[Math.Max(0, idx - 1)] : null;
         }
     }
 }
